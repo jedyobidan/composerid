@@ -22,7 +22,7 @@ class ObjectIndex(object):
 		return self.objs[i]
 
 
-Composers = ObjectIndex(30)
+Composers = ObjectIndex(50)
 TimeSignatures = ObjectIndex(8)
 KeySignatures = ObjectIndex(13)
 
