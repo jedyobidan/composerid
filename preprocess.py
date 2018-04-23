@@ -4,21 +4,23 @@ import numpy as np
 QNLS_PER_PHRASE = 4
 TOKENS_PER_QNL = 8
 NOTE_RANGE = 128
-ORTHO_FEATURES = 3
 
 class ObjectsToTokens(object):
-	def __init__(self):
+	def __init__(self, maximum=-1):
 		self.items = []
+		self.max = maximum
 
 	def get(self, item):
 		if item not in self.items:
+			if len(self.items) == self.max:
+				raise IndexError('maximum value reached')
 			self.items.append(item)
 
 		return self.items.index(item)
 
-COMPOSERS = ObjectsToTokens()
-TIME_SIG = ObjectsToTokens()
-KEYS = ObjectsToTokens()
+COMPOSERS = ObjectsToTokens(30)
+TIME_SIGS = ObjectsToTokens(8)
+KEYS = ObjectsToTokens(13)
 
 
 class IntervalSet(object):
@@ -57,7 +59,7 @@ class MusicPiece(object):
 
 		# Default values for metadata
 		self.tempos.addPosEdge('tp', 0, 120)
-		self.time_sigs.addPosEdge('ts', 0, TIME_SIG.get((4, 4)))
+		self.time_sigs.addPosEdge('ts', 0, TIME_SIGS.get((4, 4)))
 		self.keys.addPosEdge('key', 0, KEYS.get('unknown'))
 
 		mid = mido.MidiFile(path)
@@ -67,7 +69,7 @@ class MusicPiece(object):
 				time += float(msg.time) / mid.ticks_per_beat
 				if msg.type == 'time_signature':
 					self.time_sigs.addNegEdge('ts', time)
-					self.time_sigs.addPosEdge('ts', time, TIME_SIG.get((msg.numerator, msg.denominator)))
+					self.time_sigs.addPosEdge('ts', time, TIME_SIGS.get((msg.numerator, msg.denominator)))
 				elif msg.type == 'key_signature':
 					self.keys.addNegEdge('key', time)
 					self.keys.addPosEdge('key', time, KEYS.get(msg.key))
@@ -91,21 +93,22 @@ class MusicPiece(object):
 				if s + qnls <= self.qnls]
 
 	def featureSeq(self, start, qnls=QNLS_PER_PHRASE, gran=TOKENS_PER_QNL):
-		mat = np.zeros((TOKENS_PER_QNL * QNLS_PER_PHRASE, NOTE_RANGE + ORTHO_FEATURES + 1))
-		for i, t in enumerate(np.arange(start, start+qnls, float(1)/gran)):
-			mat[i] = self.featuresAt(t)
-
-		return mat
+		return np.array([self.featuresAt(t) for t in np.arange(start, start+qnls, float(1)/gran)])
 
 	def featuresAt(self, t):
-		vec = np.zeros(NOTE_RANGE + ORTHO_FEATURES + 1)
-		for note in self.notes.getValuesAt(t):
-			vec[note] = 1
+		notes_vec = np.zeros(NOTE_RANGE)
+		notes_vec[self.notes.getValuesAt(t)] = 1
 
-		vec[NOTE_RANGE] = self.tempos.getValuesAt(t)[0]
-		vec[NOTE_RANGE+1] = self.time_sigs.getValuesAt(t)[0]
-		vec[NOTE_RANGE+2] = self.keys.getValuesAt(t)[0]
+		tempo = self.tempos.getValuesAt(t)[0]
 
-		vec[-1] = self.composer
-		return vec
+		time_sig_vec = np.zeros(TIME_SIGS.max)
+		time_sig_vec[self.time_sigs.getValuesAt(t)] = 1
+
+		key_vec = np.zeros(KEYS.max)
+		key_vec[self.keys.getValuesAt(t)] = 1
+
+		composer_vec = np.zeros(COMPOSERS.max)
+		composer_vec[self.composer] = 1
+
+		return np.r_[notes_vec, tempo, time_sig_vec, key_vec, composer_vec]
 
