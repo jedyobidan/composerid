@@ -37,7 +37,7 @@ class IntervalSet(object):
 			self.intervals.append((start, end, value))
 
 	def getValuesAt(self, t):
-		return [tup[2] for tup in self.intervals if tup[0] <= t and tup[1] > t]
+		return [v for (s, e, v) in self.intervals if s <= t and e > t]
 
 	def addPosEdge(self, id, start, value):
 		self.pos_edge[id] = (start, value)
@@ -80,7 +80,8 @@ class MusicPiece(object):
 					self.tempos.addPosEdge('tp', time, mido.tempo2bpm(msg.tempo))
 				elif msg.type == 'time_signature':
 					self.time_sigs.addNegEdge('ts', time)
-					self.time_sigs.addPosEdge('ts', time, TimeSignatures.getIndex((msg.numerator, msg.denominator)))
+					self.time_sigs.addPosEdge('ts', time, 
+						TimeSignatures.getIndex((msg.numerator, msg.denominator)))
 				elif msg.type == 'key_signature':
 					self.keys.addNegEdge('key', time)
 					self.keys.addPosEdge('key', time, KeySignatures.getIndex(msg.key))
