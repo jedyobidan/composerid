@@ -1,5 +1,6 @@
 import mido
 import numpy as np
+from os import listdir
 
 QNLS_PER_PHRASE = 4
 TOKENS_PER_QNL = 8
@@ -23,8 +24,8 @@ class ObjectIndex(object):
 
 
 Composers = ObjectIndex(50)
-TimeSignatures = ObjectIndex(8)
-KeySignatures = ObjectIndex(13)
+TimeSignatures = ObjectIndex(50)
+KeySignatures = ObjectIndex(52)
 
 
 class IntervalSet(object):
@@ -119,4 +120,18 @@ class MusicPiece(object):
 		composer_vec = np.zeros(Composers.max)
 		composer_vec[self.composer] = 1
 		return composer_vec
+
+
+def process_dataset(path):
+	subdirs = [(composer, path + '/' + composer) for composer in listdir(path)]
+	for composer, subdir in subdirs:
+		for mid in listdir(subdir):
+			try:
+				m = MusicPiece(composer, subdir + '/' + mid)
+			except Exception as e:
+				print subdir + '/' + mid
+				print type(e)
+
+
+	# return [MusicPiece(composer, subdir + '/' + mid) for composer, subdir in subdirs for mid in listdir(subdir) ]
 
