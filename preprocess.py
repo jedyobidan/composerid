@@ -124,14 +124,5 @@ class MusicPiece(object):
 
 def process_dataset(path):
 	subdirs = [(composer, path + '/' + composer) for composer in listdir(path)]
-	for composer, subdir in subdirs:
-		for mid in listdir(subdir):
-			try:
-				m = MusicPiece(composer, subdir + '/' + mid)
-			except Exception as e:
-				print subdir + '/' + mid
-				print type(e)
-
-
-	# return [MusicPiece(composer, subdir + '/' + mid) for composer, subdir in subdirs for mid in listdir(subdir) ]
+	return [[MusicPiece(composer, subdir + '/' + mid) for mid in listdir(subdir)] for composer, subdir in subdirs ]
 

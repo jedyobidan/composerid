@@ -9,7 +9,7 @@ import shutil
 import itertools
 from datetime import datetime
 from random import shuffle
-from preprocess import PreprocessData
+from preprocess import process_dataset, MusicPiece
 
 MAX_LENGTH = 100
 BATCH_SIZE = 128
@@ -190,7 +190,7 @@ def compute_summary_metrics(sess, m,sentence_words_val, sentence_tags_val):
 ## train and test adapted from https://github.com/tensorflow/tensorflow/blob/master/tensorflow/
 ## models/image/cifar10/cifar10_train.py and cifar10_eval.py
 
-def train_music(music_feature_train, music_lable_train, music_feature_val, music_lable_val, train_dir):
+def train(music_feature_train, music_label_train, music_feature_val, music_label_val, train_dir):
 	m = Model(50)
 	with tf.Graph().as_default():
 	    global_step = tf.Variable(0, trainable=False)
@@ -218,7 +218,7 @@ def train_music(music_feature_train, music_lable_train, music_feature_val, music
 
 	    summary_writer = tf.summary.FileWriter(train_dir, sess.graph)
 	    j = 0
-	    for i, epoch in enumerate(generate_epochs(music_feature_train, music_lable_train, NO_OF_EPOCHS)):
+	    for i, epoch in enumerate(generate_epochs(music_feature_train, music_label_train, NO_OF_EPOCHS)):
 	        start_time = time.time()
 	        for step, (X, y) in enumerate(epoch):
 				_, summary_value = sess.run([train_op, summary_op], feed_dict=
@@ -226,7 +226,7 @@ def train_music(music_feature_train, music_lable_train, music_feature_val, music
 				duration = time.time() - start_time
 				j += 1
 				if j % VALIDATION_FREQUENCY == 0:
-					val_loss, val_accuracy, oov_accuracy = compute_summary_metrics(sess, m, sentence_words_val, sentence_tags_val)
+					val_loss, val_accuracy, oov_accuracy = compute_summary_metrics(sess, m, music_feature_val, music_label_val)
 					summary = tf.Summary()
 					summary.ParseFromString(summary_value)
 					summary.value.add(tag='Validation Loss', simple_value=val_loss)
@@ -267,36 +267,35 @@ def test(sentence_words_test, sentence_tags_test,
 			print 'Test OoV Accuracy {:.3f}'.format(test_oov_accuracy)
 
 
+def separate_labels(data):
+	data = [ex for ex in t.getTrainingExamples() for t in data]
+	data_X = [t[0] for t in data]
+	data_Y = [t[1] for t in data]
+	return data_X, data_Y
+
 if __name__ == '__main__':
 	dataset_path = sys.argv[1]
 	train_dir = sys.argv[2]
-	split_type = sys.argv[3]
-	experiment_type = sys.argv[4]
+	experiment_type = sys.argv[3]
 
+	dataset = process_dataset(dataset_path)
+	training = []
+	validation = []
+	test = []
+	for ds in dataset:
+		shuffle(ds)
+		training += ds[:int(len(ds) * 0.8)]
+		validation += ds[int(len(ds) * 0.8):int(len(ds) * 0.9)]
+		test += ds[int(len(ds) * 0.9):]
 
-	p = PreprocessData(dataset_type='wsj')
-
-	files = p.preProcessDirectory(dataset_path)
-	
-	if split_type == 'standard':
-		train_files, val_files, test_files = p.get_standard_split(files)
-	else:
-		shuffle(files)
-		train_files, test_val_files = p.split_data(files, 0.8)
-		#test_files, val_files = p.split_data(test_val_files, 0.5)
-
-	train_mat = p.get_raw_data(train_files, 'train')
-	val_mat = p.get_raw_data(val_files, 'validation')
-	test_mat = p.get_raw_data(test_files, 'test')
-
-	X_train, y_train, _ = p.get_processed_data(train_mat, MAX_LENGTH)
-	X_val, y_val, _ = p.get_processed_data(val_mat, MAX_LENGTH)
-	#X_test, y_test, _ = p.get_processed_data(test_mat, MAX_LENGTH)
+	X_train, y_train = separate_labels(training)
+	X_val, y_val = separate_labels(validation)
+	X_test, y_test= separate_labels(test)
 
 	if experiment_type == 'train':
 		if os.path.exists(train_dir):
 			shutil.rmtree(train_dir)
 		os.mkdir(train_dir)
-		train(X_train, y_train, X_val, y_val, len(p.vocabulary)+2, len(p.pos_tags)+1, train_dir)
+		train(X_train, y_train, X_val, y_val, train_dir)
 	else:
-		test(X_test, y_test, len(p.vocabulary)+2, len(p.pos_tags)+1, train_dir)
+		test(X_test, y_test, train_dir)
