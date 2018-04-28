@@ -19,16 +19,14 @@ CHECKPOINT_FREQUENCY = 50
 NO_OF_EPOCHS = 6
 PRE_ORTHO = False
 POST_ORTHO = False
+SEQ_LENGTH = 32
 
 
 ## Model class is adatepd from model.py found here
 ## https://github.com/monikkinom/ner-lstm/
 class Model:
-	def __init__(self, input_dim, sequence_len, output_dim,
+	def __init__(self, output_dim,
 				 hidden_state_size=300):
-		self._vocab_size = input_dim
-		self._input_dim = input_dim
-		self._sequence_len = sequence_len
 		self._output_dim = output_dim
 		self._hidden_state_size = hidden_state_size
 		self._optimizer = tf.train.AdamOptimizer(0.0005)
@@ -42,68 +40,34 @@ class Model:
 		self._input_feats = input_
 		self._output_tags = output
 	
-	## Returns the mask that is 1 for the actual words
-	## and 0 for the padded part
-	# Adapted from https://github.com/monikkinom/ner-lstm/blob/master/model.py __init__ function
-	def get_mask(self, t):
-		mask = tf.cast(tf.not_equal(t, -1), tf.int32)
-		lengths = tf.reduce_sum(mask, axis=1)
-		return mask, lengths
-
-	## Returns mask that is 1 for all oov words, 0 else.
-	def get_oov_mask(self, t):
-		mask = tf.cast(tf.equal(t[:,:,0], self._vocab_size-2), tf.int32)
-		length = tf.reduce_sum(mask)
-		return mask, length
-
-	## Embed the large one hot input vector into a smaller space
-	## to make the lstm learning tractable
-	def get_embedding(self, input_):
-		embedding = tf.get_variable("embedding", 
-							[self._input_dim,self._hidden_state_size ], dtype=tf.float32)
-		return tf.nn.embedding_lookup(embedding,tf.cast(input_, tf.int32))
-
-	# Adapted from https://github.com/monikkinom/ner-lstm/blob/master/model.py __init__ function
 	def create_graph(self):
 		self.create_placeholders()
 
 		## Create forward and backward cell
 		forward_cell = tf.contrib.rnn.LSTMCell(self._hidden_state_size, state_is_tuple=True)
-		backward_cell = tf.contrib.rnn.LSTMCell(self._hidden_state_size, state_is_tuple=True)
+		#backward_cell = tf.contrib.rnn.LSTMCell(self._hidden_state_size, state_is_tuple=True)
 
 		## Since we are padding the input, we need to give
 		## the actual length of every instance in the batch
 		## so that the backward lstm works properly
-		self._mask, self._lengths = self.get_mask(self._output_tags)
-		self._oov_mask, self._n_oov = self.get_oov_mask(self._input_feats)
-		self._total_length = tf.reduce_sum(self._lengths)
 
 
 		## Embedd the very large input vector into a smaller dimension
 		## This is for computational tractability
 		with tf.variable_scope("lstm_input"):
-			lstm_input = self.get_embedding(self._input_feats[:,:,0])
-			if PRE_ORTHO:
-				lstm_input = tf.concat([lstm_input, tf.cast(self._input_feats[:,:,1:], tf.float32)], axis=-1)
-
+			lstm_input = self._input_feats
 		
 		## Apply bidrectional dyamic rnn to get a tuple of forward
 		## and backward outputs. Using dynamic rnn instead of just 
 		## an rnn avoids the task of breaking the input into 
 		## into a list of tensors (one per time step)
 		with tf.variable_scope("lstm"):
-			outputs, _ = tf.nn.bidirectional_dynamic_rnn(forward_cell, backward_cell,
-			                                       		   lstm_input,dtype=tf.float32,
-			                                       		   sequence_length=self._lengths)
+			outputs, _ = tf.nn.dynamic_rnn(forward_cell,
+			                                            lstm_input,dtype=tf.float32,
+			                                            sequence_length=SEQ_LENGTH)
+                        outputs = outputs[:,-1,:]
 
 		with tf.variable_scope("lstm_output"):
-			## concat forward and backward states
-			outputs = tf.concat(outputs, 2)
-			if POST_ORTHO:
-				outputs = tf.concat([outputs, tf.cast(self._input_feats[:,:,1:], tf.float32)], 2)
-
-			print outputs
-			
 			
 			## Apply linear transformation to get logits(unnormalized scores)
 			logits = self.compute_logits(outputs)
@@ -117,9 +81,8 @@ class Model:
 
 		self._loss = self.cost( self._output_tags, self._probabilities)
 		self._accuracy = self.compute_accuracy( self._output_tags, self._probabilities, self._mask)
-		self._oov_accuracy = self.compute_accuracy(self._output_tags, self._probabilities, self._oov_mask)
-		self._average_accuracy = self._accuracy/tf.cast(self._total_length, tf.float32)
-		self._average_loss = self._loss/tf.cast(self._total_length, tf.float32)
+		self._average_accuracy = self._accuracy/tf.cast(BATCH_SIZE * SEQ_LENGTH, tf.float32)
+		self._average_loss = self._loss/tf.cast(BATCH_SIZE * SEQ_LENGTH, tf.float32)
 
 	# Taken from https://github.com/monikkinom/ner-lstm/blob/master/model.py weight_and_bias function
 	## Creates a fully connected layer with the given dimensions and parameters
@@ -130,13 +93,11 @@ class Model:
 
 	# Taken from https://github.com/monikkinom/ner-lstm/blob/master/model.py __init__ function
 	def compute_logits(self, outputs):
-		softmax_input_size = int(outputs.get_shape()[2])
-		outputs = tf.reshape(outputs, [-1, softmax_input_size])
+		softmax_input_size = int(outputs.get_shape()[1])
 		
 		W, b = self.initialize_fc_layer(softmax_input_size, self._output_dim)
 		
 		logits = tf.matmul(outputs, W) + b
-		logits = tf.reshape(logits, [-1, self._sequence_len, self._output_dim])
 		return logits
 
 	def add_loss_summary(self):
@@ -150,27 +111,22 @@ class Model:
 		training_vars = tf.trainable_variables()
 		grads, _ = tf.clip_by_global_norm(tf.gradients(loss, training_vars), 10)
 		apply_gradient_op = self._optimizer.apply_gradients(zip(grads, training_vars),
-														    global_step)
+		    global_step)
 		return apply_gradient_op
 
     	# Adapted from https://github.com/monikkinom/ner-lstm/blob/master/model.py cost function
-	def compute_accuracy(self, pos_classes, probabilities, mask):
-		predicted_classes = tf.cast(tf.argmax(probabilities, dimension=2), tf.int32)
-		correct_predictions = tf.cast(tf.equal(predicted_classes, pos_classes), tf.int32)
-		correct_predictions = tf.multiply(correct_predictions, mask)
+	def compute_accuracy(self, composers, probabilities):
+		predicted_classes = tf.cast(tf.argmax(probabilities, dimension=1), tf.int32)
+                actual_classes = tf.cast(tf.argmax(composers, dimension=1), tf.int32)
+		correct_predictions = tf.cast(tf.equal(predicted_classes, actual_classes), tf.int32)
 		return tf.cast(tf.reduce_sum(correct_predictions), tf.float32)
 
-	def get_total_length():
-		return self.total_length
-
 	# Adapted from https://github.com/monikkinom/ner-lstm/blob/master/model.py cost function
-	def cost(self, pos_classes, probabilities):
-		pos_classes = tf.cast(pos_classes, tf.int32)
-		pos_one_hot = tf.one_hot(pos_classes, self._output_dim)
-		pos_one_hot = tf.cast(pos_one_hot, tf.float32)
+	def cost(self, composers, probabilities):
+		composers = tf.cast(composers, tf.float32)
 		## masking not needed since pos class vector will be zero for 
 		## padded time steps
-		cross_entropy = pos_one_hot*tf.log(probabilities)
+		cross_entropy = composers*tf.log(probabilities)
 		return -tf.reduce_sum(cross_entropy)
 
 	@property
@@ -192,15 +148,6 @@ class Model:
 	@property
 	def total_length(self):
 		return self._total_length
-
-	@property
-	def n_oov(self):
-		return self._n_oov
-
-	@property
-	def oov_accuracy(self):
-		return self._oov_accuracy
-	
 
 # Adapted from http://r2rt.com/recurrent-neural-networks-in-tensorflow-i.html
 def generate_batch(X, y):
@@ -242,9 +189,9 @@ def compute_summary_metrics(sess, m,sentence_words_val, sentence_tags_val):
 
 ## train and test adapted from https://github.com/tensorflow/tensorflow/blob/master/tensorflow/
 ## models/image/cifar10/cifar10_train.py and cifar10_eval.py
-def train(sentence_words_train, sentence_tags_train, sentence_words_val,
-		  sentence_tags_val, vocab_size, no_pos_classes, train_dir):
-	m = Model(vocab_size, MAX_LENGTH, no_pos_classes)
+
+def train_music(music_feature_train, music_lable_train, music_feature_val, music_lable_val, train_dir):
+	m = Model(50)
 	with tf.Graph().as_default():
 	    global_step = tf.Variable(0, trainable=False)
 	    
@@ -271,7 +218,7 @@ def train(sentence_words_train, sentence_tags_train, sentence_words_val,
 
 	    summary_writer = tf.summary.FileWriter(train_dir, sess.graph)
 	    j = 0
-	    for i, epoch in enumerate(generate_epochs(sentence_words_train, sentence_tags_train, NO_OF_EPOCHS)):
+	    for i, epoch in enumerate(generate_epochs(music_feature_train, music_lable_train, NO_OF_EPOCHS)):
 	        start_time = time.time()
 	        for step, (X, y) in enumerate(epoch):
 				_, summary_value = sess.run([train_op, summary_op], feed_dict=
@@ -294,6 +241,7 @@ def train(sentence_words_train, sentence_tags_train, sentence_words_val,
 				if j % CHECKPOINT_FREQUENCY == 0:
 					checkpoint_path = os.path.join(train_dir, 'model.ckpt')
 					saver.save(sess, checkpoint_path, global_step=j)
+
 
 ## Check performance on held out test data
 ## Loads most recent model from train_dir
@@ -324,12 +272,6 @@ if __name__ == '__main__':
 	train_dir = sys.argv[2]
 	split_type = sys.argv[3]
 	experiment_type = sys.argv[4]
-	if sys.argv[5] == 'pre':
-		print 'Will concatenate orthographic features to input features'
-		PRE_ORTHO = True
-	elif sys.argv[5] == 'post':
-		print 'Will concatenate orthographic features before final layer'
-		POST_ORTHO = True
 
 
 	p = PreprocessData(dataset_type='wsj')
@@ -341,7 +283,7 @@ if __name__ == '__main__':
 	else:
 		shuffle(files)
 		train_files, test_val_files = p.split_data(files, 0.8)
-		test_files, val_files = p.split_data(test_val_files, 0.5)
+		#test_files, val_files = p.split_data(test_val_files, 0.5)
 
 	train_mat = p.get_raw_data(train_files, 'train')
 	val_mat = p.get_raw_data(val_files, 'validation')
@@ -349,7 +291,7 @@ if __name__ == '__main__':
 
 	X_train, y_train, _ = p.get_processed_data(train_mat, MAX_LENGTH)
 	X_val, y_val, _ = p.get_processed_data(val_mat, MAX_LENGTH)
-	X_test, y_test, _ = p.get_processed_data(test_mat, MAX_LENGTH)
+	#X_test, y_test, _ = p.get_processed_data(test_mat, MAX_LENGTH)
 
 	if experiment_type == 'train':
 		if os.path.exists(train_dir):
