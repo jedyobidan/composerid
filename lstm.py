@@ -76,8 +76,8 @@ class Model:
 
         self._loss = self.cost(self._output_tags, self._probabilities)
         self._accuracy = self.compute_accuracy(self._output_tags, self._probabilities)
-        self._average_accuracy = self._accuracy/tf.cast(BATCH_SIZE * SEQ_LENGTH, tf.float32)
-        self._average_loss = self._loss/tf.cast(BATCH_SIZE * SEQ_LENGTH, tf.float32)
+        self._average_accuracy = self._accuracy/tf.cast(BATCH_SIZE, tf.float32)
+        self._average_loss = self._loss/tf.cast(BATCH_SIZE, tf.float32)
 
     # Taken from https://github.com/monikkinom/ner-lstm/blob/master/model.py weight_and_bias function
     ## Creates a fully connected layer with the given dimensions and parameters
@@ -157,7 +157,7 @@ def generate_epochs(X, y, no_of_epochs):
     X = X[:lx]
     y = y[:lx]
     for i in range(no_of_epochs):
-        shuffle_data(X, y)
+        X, y = shuffle_data(X, y)
         yield generate_batch(X, y)
 
 ## Compute overall loss and accuracy on dev/test data
@@ -171,7 +171,7 @@ def compute_summary_metrics(sess, m, music_feature_val, music_label_val):
             )
             loss += batch_loss
             accuracy += batch_accuracy
-            total_len += SEQ_LENGTH * BATCH_SIZE
+            total_len += BATCH_SIZE
 
     loss = loss/total_len if total_len != 0 else 0
     accuracy = accuracy/total_len if total_len != 0 else 1
@@ -268,13 +268,13 @@ if __name__ == '__main__':
     experiment_type = sys.argv[3]
 
     dataset = process_dataset(dataset_path)
-    dataset = ([ex for t in ds for ex in t.getTrainingExamples()] for ds in dataset)
+    # dataset = [[ex for t in ds for ex in t.getTrainingExamples()] for ds in dataset]
 
     training = []
     validation = []
     test = []
     for ds in dataset:
-        print "Processing a composer"
+        shuffle(ds)
         training += ds[:int(len(ds) * 0.8)]
         validation += ds[int(len(ds) * 0.8):int(len(ds) * 0.9)]
         test += ds[int(len(ds) * 0.9):]
@@ -282,8 +282,6 @@ if __name__ == '__main__':
     X_train, y_train = separate_labels(training)
     X_val, y_val = separate_labels(validation)
     X_test, y_test= separate_labels(test)
-
-    print X_train
 
     if experiment_type == 'train':
         if os.path.exists(train_dir):

@@ -1,10 +1,14 @@
 import mido
 import numpy as np
 from os import listdir
+import os
+import sys
+import pickle
 
 QNLS_PER_PHRASE = 4
 TOKENS_PER_QNL = 8
 NOTE_RANGE = 128
+EX_PER_COMPOSER = 2500
 
 class ObjectIndex(object):
     def __init__(self, maximum=-1):
@@ -140,5 +144,37 @@ class MusicPiece(object):
 
 
 def process_dataset(path):
-    subdirs = [(composer, path + '/' + composer) for composer in listdir(path)]
-    return [[MusicPiece(composer, subdir + '/' + mid) for mid in listdir(subdir)] for composer, subdir in subdirs ]
+    processed = []
+
+    for composer in listdir(path):
+        print "Processing %s" % composer
+        subdir = path + '/' + composer
+        composer_examples = []
+        for midi in listdir(subdir):
+            m = MusicPiece(composer, subdir + '/' + midi)
+            composer_examples += m.getTrainingExamples()
+            if len(composer_examples) > EX_PER_COMPOSER:
+                break;
+
+        processed.append(composer_examples)
+
+    return processed
+
+if __name__ == '__main__':
+    root_path = sys.argv[1]
+    output = sys.argv[2]
+    processed = process_dataset(root_path)
+
+    # for composer in listdir(root_path):
+    #     print "Processing %s" % composer
+    #     subdir = root_path + '/' + composer
+    #     composer_examples = []
+    #     for midi in listdir(subdir):
+    #         m = MusicPiece(composer, subdir + '/' + midi)
+    #         composer_examples += m.getTrainingExamples()
+    #         if len(composer_examples) > EX_PER_COMPOSER:
+    #             break;
+
+    #     processed += composer_examples
+
+    pickle.dump(processed, open(output, 'wb'))
