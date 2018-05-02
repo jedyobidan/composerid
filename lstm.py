@@ -257,31 +257,20 @@ def test(sentence_words_test, sentence_tags_test,
             print 'Test OoV Accuracy {:.3f}'.format(test_oov_accuracy)
 
 
-def separate_labels(data):
-    data_X = [t[0] for t in data]
-    data_Y = [t[1] for t in data]
-    return data_X, data_Y
+def pieces2Mat(pieces):
+    pieces = [v for p in pieces for v in p.getTrainingExamples()]
+    return zip(*pieces)
 
 if __name__ == '__main__':
     dataset_path = sys.argv[1]
     train_dir = sys.argv[2]
     experiment_type = sys.argv[3]
 
-    dataset = process_dataset(dataset_path)
-    # dataset = [[ex for t in ds for ex in t.getTrainingExamples()] for ds in dataset]
+    training, validation, test = process_dataset(dataset_path)
 
-    training = []
-    validation = []
-    test = []
-    for ds in dataset:
-        shuffle(ds)
-        training += ds[:int(len(ds) * 0.8)]
-        validation += ds[int(len(ds) * 0.8):int(len(ds) * 0.9)]
-        test += ds[int(len(ds) * 0.9):]
-
-    X_train, y_train = separate_labels(training)
-    X_val, y_val = separate_labels(validation)
-    X_test, y_test= separate_labels(test)
+    X_train, y_train = pieces2Mat(training)
+    X_val, y_val = pieces2Mat(validation)
+    X_test, y_test= pieces2Mat(test)
 
     if experiment_type == 'train':
         if os.path.exists(train_dir):

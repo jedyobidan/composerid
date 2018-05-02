@@ -8,7 +8,9 @@ import pickle
 QNLS_PER_PHRASE = 4
 TOKENS_PER_QNL = 8
 NOTE_RANGE = 128
-EX_PER_COMPOSER = 2500
+TRAIN_SAMPLES = 10000
+VAL_SAMPLES = 1000
+TEST_SAMPLES = 1000
 
 class ObjectIndex(object):
     def __init__(self, maximum=-1):
@@ -114,28 +116,8 @@ class MusicPiece(object):
 
         return mat
 
-        # return np.array([self.featuresAt(t) for t in np.arange(start, start+qnls, float(1)/gran)])
-
-    # def featuresAt(self, t):
-    #     feature_vec = np.zeros(NFEATURES)
-    #     feature_vec[self.notes.getValuesAt(t)] = 1 # Notes
-    #     feature_vec[NOTE_RANGE] = self.tempos.getValuesAt(t)[0] # Tempo
-    #     feature_vec[NOTE_RANGE + 1 + self.time_sigs.getValuesAt(t)[0]] = 1 # Timesig
-    #     feature_vec[NOTE_RANGE + 1 + TimeSignatures.max + self.keys.getValuesAt(t)[0]] = 1 # Key
-    #     return feature_vec
-
-        # notes_vec = np.zeros(NOTE_RANGE)
-        # notes_vec[self.notes.getValuesAt(t)] = 1
-
-        # tempo = self.tempos.getValuesAt(t)[0]
-
-        # time_sig_vec = np.zeros(TimeSignatures.max)
-        # time_sig_vec[self.time_sigs.getValuesAt(t)] = 1
-
-        # key_vec = np.zeros(KeySignatures.max)
-        # key_vec[self.keys.getValuesAt(t)] = 1
-
-        # return np.r_[notes_vec, tempo, time_sig_vec, key_vec]
+    def length(self):
+        return self.qnls
 
     def labelVec(self):
         composer_vec = np.zeros(Composers.max)
@@ -144,21 +126,28 @@ class MusicPiece(object):
 
 
 def process_dataset(path):
-    processed = []
+    train = []
+    val = []
+    test = []
 
     for composer in listdir(path):
-        print "Processing %s" % composer
-        subdir = path + '/' + composer
-        composer_examples = []
-        for midi in listdir(subdir):
-            m = MusicPiece(composer, subdir + '/' + midi)
-            composer_examples += m.getTrainingExamples()
-            if len(composer_examples) > EX_PER_COMPOSER:
-                break;
+        train += get_examples('/'.join((path, composer, 'train')), composer, TRAIN_SAMPLES)
+        val += get_examples('/'.join((path, composer, 'val')), composer, VAL_SAMPLES)
+        test += get_examples('/'.join((path, composer, 'test')), composer, TEST_SAMPLES)
 
-        processed.append(composer_examples)
+    return train, val, test
 
-    return processed
+def get_examples(path, composer, limit):
+    examples = []
+    for midi in listdir(path):
+        m = MusicPiece(composer, '/'.join((path, midi)))
+        examples.append(m)
+        limit -= m.length()
+        if limit <= 0:
+            break
+
+    return examples
+
 
 if __name__ == '__main__':
     root_path = sys.argv[1]
@@ -172,7 +161,7 @@ if __name__ == '__main__':
     #     for midi in listdir(subdir):
     #         m = MusicPiece(composer, subdir + '/' + midi)
     #         composer_examples += m.getTrainingExamples()
-    #         if len(composer_examples) > EX_PER_COMPOSER:
+    #         if len(composer_examples) > TRAIN_SAMPLES:
     #             break;
 
     #     processed += composer_examples
