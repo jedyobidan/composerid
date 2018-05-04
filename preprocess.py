@@ -8,9 +8,9 @@ import pickle
 QNLS_PER_PHRASE = 4
 TOKENS_PER_QNL = 8
 NOTE_RANGE = 128
-TRAIN_SAMPLES = 10000
-VAL_SAMPLES = 1000
-TEST_SAMPLES = 1000
+TRAIN_SAMPLES = -12500
+VAL_SAMPLES = -1000
+TEST_SAMPLES = -1000
 
 class ObjectIndex(object):
     def __init__(self, maximum=-1):
@@ -62,6 +62,7 @@ class IntervalSet(object):
 
 class MusicPiece(object):
     def __init__(self, composer, path):
+        self.path = path
         self.notes = IntervalSet()
         self.tempos = IntervalSet()
         self.time_sigs = IntervalSet()
@@ -102,9 +103,17 @@ class MusicPiece(object):
         self.keys.finalize(self.qnls)
 
     def getTrainingExamples(self, qnls=QNLS_PER_PHRASE, gran=TOKENS_PER_QNL):
+        print 'Processing %s' % self.path
         label = self.labelVec()
-        return ((self.featureSeq(s, qnls, gran), label) for s in np.arange(0, self.qnls, qnls) 
-                if s + qnls <= self.qnls)
+        samples = np.arange(0, self.qnls, qnls)
+        np.random.shuffle(samples)
+        if len(samples) > 50:
+            samples = samples[:50]
+        ret = [(self.featureSeq(s, qnls, gran), label) for s in samples if s + qnls <= self.qnls]
+        if len(ret) == 0:
+            raise ValueError('Too short!')
+
+        return ret
 
     def featureSeq(self, start, qnls=QNLS_PER_PHRASE, gran=TOKENS_PER_QNL):
         mat = np.zeros((qnls * gran, NFEATURES))
@@ -141,10 +150,12 @@ def get_examples(path, composer, limit):
     examples = []
     for midi in listdir(path):
         m = MusicPiece(composer, '/'.join((path, midi)))
+        if m.qnls <= QNLS_PER_PHRASE: # Too short
+            continue;
         examples.append(m)
         limit -= m.length()
-        if limit <= 0:
-            break
+        # if limit <= 0:
+            # break
 
     return examples
 

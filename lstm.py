@@ -16,7 +16,7 @@ BATCH_SIZE = 128
 ORTHO_FEATURES = 46
 VALIDATION_FREQUENCY = 10
 CHECKPOINT_FREQUENCY = 50
-NO_OF_EPOCHS = 6
+NO_OF_EPOCHS = 8
 PRE_ORTHO = False
 POST_ORTHO = False
 SEQ_LENGTH = QNLS_PER_PHRASE * TOKENS_PER_QNL
@@ -38,6 +38,10 @@ class Model:
     def set_input_output(self, input_, output):
         self._input_feats = input_
         self._output_tags = output
+
+    def get_mask(self, t):
+        t = tf.reduce_max(t, axis=1)
+        return tf.cast(tf.not_equal(t, -1), tf.int32)
     
     def create_graph(self):
         self.create_placeholders()
@@ -74,10 +78,19 @@ class Model:
             ## example at each time step
             self._probabilities = tf.nn.softmax(logits)
 
-        self._loss = self.cost(self._output_tags, self._probabilities)
-        self._accuracy = self.compute_accuracy(self._output_tags, self._probabilities)
-        self._average_accuracy = self._accuracy/tf.cast(BATCH_SIZE, tf.float32)
-        self._average_loss = self._loss/tf.cast(BATCH_SIZE, tf.float32)
+        mask = self.get_mask(self._output_tags)
+        length = tf.cast(tf.reduce_sum(mask), tf.int32)
+
+        self._total_length = length
+        self._loss = self.cost(mask, self._output_tags, self._probabilities)
+        self._accuracy = self.compute_accuracy(mask, self._output_tags, self._probabilities)
+        self._average_accuracy = self._accuracy/tf.cast(length, tf.float32)
+        self._average_loss = self._loss/tf.cast(length, tf.float32)
+        self._grouped_accuracy = self.compute_grouped_accuracy(
+            mask,
+            self._output_tags[0], 
+            self._probabilities
+        )
 
     # Taken from https://github.com/monikkinom/ner-lstm/blob/master/model.py weight_and_bias function
     ## Creates a fully connected layer with the given dimensions and parameters
@@ -110,18 +123,31 @@ class Model:
         return apply_gradient_op
 
         # Adapted from https://github.com/monikkinom/ner-lstm/blob/master/model.py cost function
-    def compute_accuracy(self, composers, probabilities):
+    def compute_accuracy(self, mask, composers, probabilities):
+        # mask = tf.expand_dims(mask, -1)
         predicted_classes = tf.cast(tf.argmax(probabilities, dimension=1), tf.int32)
         actual_classes = tf.cast(tf.argmax(composers, dimension=1), tf.int32)
         correct_predictions = tf.cast(tf.equal(predicted_classes, actual_classes), tf.int32)
-        return tf.cast(tf.reduce_sum(correct_predictions), tf.float32)
+        return tf.cast(tf.reduce_sum(tf.multiply(mask, correct_predictions)), tf.float32)
+
+    def compute_grouped_accuracy(self, mask, composer, probabilities):
+        mask = tf.cast(tf.expand_dims(mask, -1), tf.float32)
+        predicted_classes = tf.cast(tf.argmax(probabilities, dimension=1), tf.int32)
+        predicted_classes = tf.cast(tf.one_hot(predicted_classes, Composers.max), tf.int32)
+        sum_probability = tf.cast(tf.reduce_sum(tf.multiply(probabilities, mask), axis=0), tf.int32)
+        predicted_composer = tf.cast(tf.argmax(sum_probability), tf.int32)
+        actual_composer = tf.cast(tf.argmax(composer), tf.int32)
+        return tf.cast(tf.equal(predicted_composer, actual_composer), tf.int32)
+
 
     # Adapted from https://github.com/monikkinom/ner-lstm/blob/master/model.py cost function
-    def cost(self, composers, probabilities):
+    def cost(self, mask, composers, probabilities):
+        mask = tf.expand_dims(mask, -1)
         composers = tf.cast(composers, tf.float32)
         ## masking not needed since pos class vector will be zero for 
         ## padded time steps
         cross_entropy = composers*tf.log(probabilities)
+        cross_entropy = tf.multiply(tf.cast(mask, tf.float32), cross_entropy)
         return -tf.reduce_sum(cross_entropy)
 
     @property
@@ -139,6 +165,16 @@ class Model:
     @property
     def accuracy(self):
         return self._accuracy
+
+    @property
+    def grouped_accuracy(self):
+        return self._grouped_accuracy
+
+    @property
+    def total_length(self):
+        return self._total_length
+    
+    
 
 # Adapted from http://r2rt.com/recurrent-neural-networks-in-tensorflow-i.html
 def generate_batch(X, y):
@@ -176,6 +212,32 @@ def compute_summary_metrics(sess, m, music_feature_val, music_label_val):
     loss = loss/total_len if total_len != 0 else 0
     accuracy = accuracy/total_len if total_len != 0 else 1
     return loss, accuracy
+
+def compute_summary_metrics2(sess, m, music_feature_val, music_label_val):
+    accuracy, loss, grouped_accuracy, total_len = 0.0, 0.0, 0.0, 0
+    for X, y in zip(music_feature_val, music_label_val):
+        if len(X) > BATCH_SIZE:
+            X = X[:BATCH_SIZE]
+            y = y[:BATCH_SIZE]
+        elif len(X) < BATCH_SIZE:
+            nops = BATCH_SIZE - len(X)
+            X = np.r_[X, np.zeros((nops, SEQ_LENGTH, NFEATURES))]
+            y = np.r_[y, -np.ones((nops, Composers.max))]
+
+        batch_loss, batch_accuracy, batch_gaccuracy, batch_length = sess.run(
+            [m.loss, m.accuracy, m.grouped_accuracy, m.total_length],
+            feed_dict={m.input_feats:X, m.output_tags: y}
+        )
+        grouped_accuracy += batch_gaccuracy
+        accuracy += batch_accuracy
+        loss += batch_loss
+        total_len += batch_length
+
+    grouped_accuracy = grouped_accuracy / len(music_feature_val)
+    loss = loss/total_len
+    accuracy = accuracy/total_len
+
+    return loss, accuracy, grouped_accuracy
 
 ## train and test adapted from https://github.com/tensorflow/tensorflow/blob/master/tensorflow/
 ## models/image/cifar10/cifar10_train.py and cifar10_eval.py
@@ -217,14 +279,15 @@ def train(music_feature_train, music_label_train, music_feature_val, music_label
                 duration = time.time() - start_time
                 j += 1
                 if j % VALIDATION_FREQUENCY == 0:
-                    val_loss, val_accuracy = compute_summary_metrics(sess, m, music_feature_val, music_label_val)
+                    val_loss, val_accuracy, group_accuracy = compute_summary_metrics2(sess, m, music_feature_val, music_label_val)
                     summary = tf.Summary()
                     summary.ParseFromString(summary_value)
                     summary.value.add(tag='Validation Loss', simple_value=val_loss)
                     summary.value.add(tag='Validation Accuracy', simple_value=val_accuracy)
+                    summary.value.add(tag='Group Accuracy', simple_value=group_accuracy)
                     summary_writer.add_summary(summary, j)
-                    log_string = '{} batches ====> Validation Accuracy {:.3f}, Validation Loss {:.3f}'
-                    print log_string.format(j, val_accuracy, val_loss)
+                    log_string = '{} batches ====> Validation Accuracy {:.3f}, Group Accuracy {:.3f}, Validation Loss {:.3f}'
+                    print log_string.format(j, val_accuracy, group_accuracy, val_loss)
                 else:
                     summary_writer.add_summary(summary_value, j)
 
@@ -261,6 +324,18 @@ def pieces2Mat(pieces):
     pieces = [v for p in pieces for v in p.getTrainingExamples()]
     return zip(*pieces)
 
+def pieces2Mat2(pieces):
+    pieces = [p.getTrainingExamples() for p in pieces]
+    Xs = []
+    ys = []
+    for p in pieces:
+        X, y = zip(*p)
+        Xs.append(list(X))
+        ys.append(list(y))
+
+    return Xs, ys
+
+
 if __name__ == '__main__':
     dataset_path = sys.argv[1]
     train_dir = sys.argv[2]
@@ -269,8 +344,10 @@ if __name__ == '__main__':
     training, validation, test = process_dataset(dataset_path)
 
     X_train, y_train = pieces2Mat(training)
-    X_val, y_val = pieces2Mat(validation)
-    X_test, y_test= pieces2Mat(test)
+    X_val, y_val = pieces2Mat2(validation)
+    # X_test, y_test= pieces2Mat(test)
+
+    print "Training Examples: %d" % len(X_train)
 
     if experiment_type == 'train':
         if os.path.exists(train_dir):
