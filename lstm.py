@@ -11,6 +11,8 @@ from datetime import datetime
 from random import shuffle
 from preprocess import *
 
+from collections import defaultdict
+
 MAX_LENGTH = 100
 BATCH_SIZE = 128
 ORTHO_FEATURES = 46
@@ -28,7 +30,7 @@ class Model:
     def __init__(self, output_dim, hidden_state_size=300):
         self._output_dim = output_dim
         self._hidden_state_size = hidden_state_size
-        self._optimizer = tf.train.AdamOptimizer(0.0005)
+        self._optimizer = tf.train.AdamOptimizer(1e-4)
 
     # Adapted from https://github.com/monikkinom/ner-lstm/blob/master/model.py __init__ function
     def create_placeholders(self):
@@ -63,8 +65,8 @@ class Model:
                 forward_cell,
                 lstm_input,
                 dtype=tf.float32,
-                sequence_length=tf.cast(SEQ_LENGTH*np.ones(BATCH_SIZE), tf.int32))
-            outputs = outputs_[:,-1,:]
+            )
+            outputs = tf.reshape(outputs_, [BATCH_SIZE, -1])
         
         with tf.variable_scope("lstm_output"):
             
@@ -84,6 +86,9 @@ class Model:
         self._total_length = length
         self._loss = self.cost(mask, self._output_tags, self._probabilities)
         self._accuracy = self.compute_accuracy(mask, self._output_tags, self._probabilities)
+        self._composer_accuracy = self.compute_composer_accuracy(mask, self._output_tags, self._probabilities)
+        self._composer_lengths = self.compute_composer_lengths(mask, self._output_tags)
+        self._avg_composer_accuracy = self._composer_accuracy/self._composer_lengths
         self._average_accuracy = self._accuracy/tf.cast(length, tf.float32)
         self._average_loss = self._loss/tf.cast(length, tf.float32)
         self._grouped_accuracy = self.compute_grouped_accuracy(
@@ -114,6 +119,10 @@ class Model:
     def add_accuracy_summary(self):
         tf.summary.scalar('Accuracy', self._average_accuracy)
 
+    def add_composer_summary(self):
+        for i, c in enumerate(Composers.objs):
+            tf.summary.scalar(c + ' Accuracy 2', self._avg_composer_accuracy[i])
+
     # Taken from https://github.com/monikkinom/ner-lstm/blob/master/model.py __init__ function
     def get_train_op(self, loss, global_step):
         training_vars = tf.trainable_variables()
@@ -125,16 +134,32 @@ class Model:
         # Adapted from https://github.com/monikkinom/ner-lstm/blob/master/model.py cost function
     def compute_accuracy(self, mask, composers, probabilities):
         # mask = tf.expand_dims(mask, -1)
+        mask = tf.cast(mask, tf.float32)
         predicted_classes = tf.cast(tf.argmax(probabilities, dimension=1), tf.int32)
         actual_classes = tf.cast(tf.argmax(composers, dimension=1), tf.int32)
-        correct_predictions = tf.cast(tf.equal(predicted_classes, actual_classes), tf.int32)
+        correct_predictions = tf.cast(tf.equal(predicted_classes, actual_classes), tf.float32)
         return tf.cast(tf.reduce_sum(tf.multiply(mask, correct_predictions)), tf.float32)
+
+    def compute_composer_accuracy(self, mask, composers, probabilities):
+        mask = tf.expand_dims(mask, -1)
+        predicted_classes = tf.cast(tf.argmax(probabilities, dimension=1), tf.int32)
+        predicted_classes = tf.cast(tf.one_hot(predicted_classes, Composers.max), tf.float32)
+        composers = tf.cast(composers, tf.float32)
+        correct_predictions = tf.cast(tf.equal(2 * predicted_classes - composers, 1), tf.int32)
+        correct_predictions = tf.multiply(mask, correct_predictions)
+
+        return tf.cast(tf.reduce_sum(correct_predictions, axis=0), tf.float32)
+
+    def compute_composer_lengths(self, mask, composers):
+        mask = tf.expand_dims(mask, -1)
+        composers = tf.multiply(mask, composers)
+        return tf.cast(tf.reduce_sum(composers, axis=0), tf.float32)
 
     def compute_grouped_accuracy(self, mask, composer, probabilities):
         mask = tf.cast(tf.expand_dims(mask, -1), tf.float32)
         predicted_classes = tf.cast(tf.argmax(probabilities, dimension=1), tf.int32)
         predicted_classes = tf.cast(tf.one_hot(predicted_classes, Composers.max), tf.int32)
-        sum_probability = tf.cast(tf.reduce_sum(tf.multiply(probabilities, mask), axis=0), tf.int32)
+        sum_probability = tf.cast(tf.reduce_sum(tf.multiply(probabilities, mask), axis=0), tf.float32)
         predicted_composer = tf.cast(tf.argmax(sum_probability), tf.int32)
         actual_composer = tf.cast(tf.argmax(composer), tf.int32)
         return tf.cast(tf.equal(predicted_composer, actual_composer), tf.int32)
@@ -173,6 +198,14 @@ class Model:
     @property
     def total_length(self):
         return self._total_length
+
+    @property
+    def composer_accuracy(self):
+        return self._composer_accuracy
+
+    @property
+    def composer_lengths(self):
+        return self._composer_lengths
     
     
 
@@ -188,12 +221,12 @@ def shuffle_data(X, y):
 
 # Adapted from http://r2rt.com/recurrent-neural-networks-in-tensorflow-i.html
 def generate_epochs(X, y, no_of_epochs):
+    X, y = shuffle_data(X, y)
     lx = len(X)
     lx = (lx//BATCH_SIZE)*BATCH_SIZE
     X = X[:lx]
     y = y[:lx]
     for i in range(no_of_epochs):
-        X, y = shuffle_data(X, y)
         yield generate_batch(X, y)
 
 ## Compute overall loss and accuracy on dev/test data
@@ -215,6 +248,7 @@ def compute_summary_metrics(sess, m, music_feature_val, music_label_val):
 
 def compute_summary_metrics2(sess, m, music_feature_val, music_label_val):
     accuracy, loss, grouped_accuracy, total_len = 0.0, 0.0, 0.0, 0
+    composer_accuracy, composer_lengths = defaultdict(int), defaultdict(int)
     for X, y in zip(music_feature_val, music_label_val):
         if len(X) > BATCH_SIZE:
             X = X[:BATCH_SIZE]
@@ -232,12 +266,16 @@ def compute_summary_metrics2(sess, m, music_feature_val, music_label_val):
         accuracy += batch_accuracy
         loss += batch_loss
         total_len += batch_length
+        composer_accuracy[Composers.getObject(np.argmax(y))] += batch_accuracy
+        composer_lengths[Composers.getObject(np.argmax(y))] += batch_length
 
     grouped_accuracy = grouped_accuracy / len(music_feature_val)
     loss = loss/total_len
     accuracy = accuracy/total_len
+    for c in composer_accuracy:
+        composer_accuracy[c] /= composer_lengths[c]
 
-    return loss, accuracy, grouped_accuracy
+    return loss, accuracy, grouped_accuracy, composer_accuracy
 
 ## train and test adapted from https://github.com/tensorflow/tensorflow/blob/master/tensorflow/
 ## models/image/cifar10/cifar10_train.py and cifar10_eval.py
@@ -262,6 +300,7 @@ def train(music_feature_train, music_label_train, music_feature_val, music_label
         ## add scalar summaries for loss, accuracy
         m.add_accuracy_summary()
         m.add_loss_summary()
+        m.add_composer_summary()
         summary_op = tf.summary.merge_all()
 
         ## Initialize all the variables
@@ -279,12 +318,14 @@ def train(music_feature_train, music_label_train, music_feature_val, music_label
                 duration = time.time() - start_time
                 j += 1
                 if j % VALIDATION_FREQUENCY == 0:
-                    val_loss, val_accuracy, group_accuracy = compute_summary_metrics2(sess, m, music_feature_val, music_label_val)
+                    val_loss, val_accuracy, group_accuracy, composer_accuracy = compute_summary_metrics2(sess, m, music_feature_val, music_label_val)
                     summary = tf.Summary()
                     summary.ParseFromString(summary_value)
                     summary.value.add(tag='Validation Loss', simple_value=val_loss)
                     summary.value.add(tag='Validation Accuracy', simple_value=val_accuracy)
                     summary.value.add(tag='Group Accuracy', simple_value=group_accuracy)
+                    for c in composer_accuracy:
+                        summary.value.add(tag=c + ' Accuracy', simple_value=composer_accuracy[c])
                     summary_writer.add_summary(summary, j)
                     log_string = '{} batches ====> Validation Accuracy {:.3f}, Group Accuracy {:.3f}, Validation Loss {:.3f}'
                     print log_string.format(j, val_accuracy, group_accuracy, val_loss)
