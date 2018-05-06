@@ -29,7 +29,7 @@ class ObjectIndex(object):
         return self.objs[i]
 
 
-Composers = ObjectIndex(50)
+Composers = ObjectIndex(20)
 TimeSignatures = ObjectIndex(50)
 KeySignatures = ObjectIndex(52)
 
@@ -102,18 +102,16 @@ class MusicPiece(object):
         self.time_sigs.finalize(self.qnls)
         self.keys.finalize(self.qnls)
 
+        self.examples = self.getTrainingExamples()
+
     def getTrainingExamples(self, qnls=QNLS_PER_PHRASE, gran=TOKENS_PER_QNL):
         print 'Processing %s' % self.path
         label = self.labelVec()
         samples = np.arange(0, self.qnls, qnls)
         np.random.shuffle(samples)
-        if len(samples) > 50:
-            samples = samples[:50]
-        ret = [(self.featureSeq(s, qnls, gran), label) for s in samples if s + qnls <= self.qnls]
-        if len(ret) == 0:
-            raise ValueError('Too short!')
-
-        return ret
+        if len(samples) > 100:
+            samples = samples[:100]
+        return [self.featureSeq(s, qnls, gran) for s in samples if s + qnls <= self.qnls]
 
     def featureSeq(self, start, qnls=QNLS_PER_PHRASE, gran=TOKENS_PER_QNL):
         mat = np.zeros((qnls * gran, NFEATURES))
@@ -135,14 +133,14 @@ class MusicPiece(object):
 
 
 def process_dataset(path):
-    train = []
-    val = []
-    test = []
+    train = {}
+    val = {}
+    test = {}
 
     for composer in listdir(path):
-        train += get_examples('/'.join((path, composer, 'train')), composer, TRAIN_SAMPLES)
-        val += get_examples('/'.join((path, composer, 'val')), composer, VAL_SAMPLES)
-        test += get_examples('/'.join((path, composer, 'test')), composer, TEST_SAMPLES)
+        train[composer] = get_examples('/'.join((path, composer, 'train')), composer, TRAIN_SAMPLES)
+        val[composer] = get_examples('/'.join((path, composer, 'val')), composer, VAL_SAMPLES)
+        test[composer] = get_examples('/'.join((path, composer, 'test')), composer, TEST_SAMPLES)
 
     return train, val, test
 
