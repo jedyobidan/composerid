@@ -326,9 +326,9 @@ def train(training, validation, train_dir):
 ## Check performance on held out test data
 ## Loads most recent model from train_dir
 ## and applies it on test data
-def test(sentence_words_test, sentence_tags_test,
-         vocab_size, no_pos_classes, train_dir):
-    m = Model(vocab_size, MAX_LENGTH, no_pos_classes)
+def test(testing, 
+         train_dir):
+    m = Model(Composers.max)
     with tf.Graph().as_default():
         global_step = tf.Variable(0, trainable=False)
         m.create_placeholders()
@@ -340,11 +340,10 @@ def test(sentence_words_test, sentence_tags_test,
                 saver.restore(sess, ckpt.model_checkpoint_path)
 
                 global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
-            test_loss, test_accuracy, test_oov_accuracy = compute_summary_metrics(sess, m, sentence_words_test,
-                                                               sentence_tags_test)
+            test_loss, test_accuracy, _, _ = compute_summary_metrics(sess, m, testing
+                                                               )
             print 'Test Accuracy: {:.3f}'.format(test_accuracy)
             print 'Test Loss: {:.3f}'.format(test_loss)
-            print 'Test OoV Accuracy {:.3f}'.format(test_oov_accuracy)
 
 
 
@@ -353,8 +352,7 @@ if __name__ == '__main__':
     train_dir = sys.argv[2]
     experiment_type = sys.argv[3]
 
-    training, validation, test = process_dataset(dataset_path)
-    # X_test, y_test= pieces2Mat(test)
+    training, validation, testing = process_dataset(dataset_path)
 
     if experiment_type == 'train':
         if os.path.exists(train_dir):
@@ -362,4 +360,4 @@ if __name__ == '__main__':
         os.mkdir(train_dir)
         train(training, validation, train_dir)
     else:
-        test(X_test, y_test, train_dir)
+        test(testing, train_dir)
