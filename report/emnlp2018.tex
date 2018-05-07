@@ -79,15 +79,19 @@ instructions of the {\em International Joint Conference on Artificial
   Pattern Recognition}.
 
 \section{Introduction}
+It has been more than four decades since Leonard Bernstein called on researchers at his famous lecture at Hardvard University \cite{Bernstein} to uncover a musical grammar similar to Noam Chomsky's generative grammar \cite{Chomsky}.
+Inspired by Bernstein's speech, American linguist Ray Jackendoff and music theorist Fred Lerdahl presented a theory of music which is called A generative theory of tonal music (GTTM) with the goal of illustrating human's understanding of music. Ever since, a number of researchers developed different models for musical grammars. Such models shows that there is a strict hierarachical structure in a musical components. Inspired by these work, we decided to see if computers can find such structures in music and identify the composer correctly based on their style. 
+These hierarchical structure which we can refer to as a musical style is intrinsic to human nature. A generative theory of tonal music also constitudes a formal description of the musical instinct of a listener. An average person can tell the difference between a symphony by Mozart and a motet by Josquin Des Prez. The interesting question is to see if computers can also find these differences. There has been a number of studies on rule based approaches. Previous works includes producing a generative grammar to capture stylistics features of a musical piece. However, these studies show that musical style happens in ways musicology and cognative approaches are still unable to perfectly define. In this paper, we transform the style recognition problem into a sequence classifier problem and train an LSTM as a sequence classifier.
+One of the challenges of this work is to extract usefu musical features for building an accurate classification model. There are number of ways to extract these musical structures and features from a dataset. These features are then used to build our classification models. In this work, we are looking at high level features extracted from MIDI files; e.g., pitch, duration, tempo, key signature and time signature. MIDI files are symbolic music representations that contain very high level structured information about music. MIDI files describe the start, duration, tempo, volume, and instrument of each note in a musical fragment. The other option would have been to extract information from audio recording of a music which is not the goal of this study. 
+In this paper, we are looking at a new approach for building a composer-classification modelwhich has never been studied before and use that on a more general problem. Previous studies on composer-classification model were mostly resulted in a binary model where it could recognize if a musical piece was written by a specific composer or not. However, in this paper we have a class of 10 composers and we build the state of the art composer-classification model. The rest of this paper is organized as follows. Section II is related work. In section III we go over our approach for building the composer-classification model. Section IV is the results section and finally section V is future work and conclusion. 
 
-The following instructions are directed to authors of papers submitted
-to \confname{} or accepted for publication in its proceedings. All
-authors are required to adhere to these specifications. Authors are
-required to provide a Portable Document Format (PDF) version of their
-papers. \textbf{The proceedings are designed for printing on A4
-paper.}
-
-\section{General Instructions}
+\section{Related Works}
+The field of music information retrieval (MIR) has become a growing field in recent years. 
+With the discovery of new techniques in machine learning and deep learning, recognizing a musical piece composer has become at the center of attention in the field of music information retrieval (MIR). In 2002 Buzzanca \cite{Buzz} used a supervised learning approach for musical style recognition of Giovanni Pierluigi da Palestrina. He implemented a neural network that could recognize Pierluigi with the accuracy of 97\% on the test set. There has been a few studies on style recognition using an n-gram model. Wolkowicz, Kulka, and Keselj \cite{n-gram} used an n-gram model to classify piano files of five composers.  Hillewaere, Manderick, and Conklin \cite{Hillewaere} also used n-gram models to classify musical pieces of two composers (Haydn and Mozart). They achieved the accuracy of 61\%. 
+Mearns, Tidhar, and Dixon \cite{Mearns} used a decision tree and naive Bayes models to classify similar musical pieces. The correctly classified 44 out of 66 pieces with seven class ofcomposers. Dor and Reich \cite{Dor} achieved an accuracy of 75\% in classifying keyboard scores between Mozart and Haydn by building a system of decision tree, naive Bayes, support vector machines, and RIPPER classifier.
+Herremans, Sorensen, and Martens built a four composer-classification model using a logistic regression model and a support vector machine classifier. They achieved an accuracy of 86\%. 
+In this paper, we use a brand new approach to tackle composer identifier problem. We use a Long Short Term Memory (LSTM) architecture to produce a composer-classification model to recognize the composer from a musical piece. 
+\section{Related }
 
 Manuscripts must be in two-column format.  Exceptions to the
 two-column format include the title, authors' names and complete

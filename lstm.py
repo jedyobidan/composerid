@@ -344,7 +344,6 @@ def test(test, train_dir):
             ckpt = tf.train.latest_checkpoint(train_dir)
             if ckpt:
                 saver.restore(sess, ckpt)
-
                 global_step = ckpt.split('/')[-1].split('-')[-1]
             test_loss, test_accuracy, group_accuracy, composer_accuracy = compute_summary_metrics(sess, m, test)
             print 'Test Accuracy: {:.3f}'.format(test_accuracy)
@@ -359,7 +358,6 @@ if __name__ == '__main__':
     train_dir_pre = '/'.join((train_dir, 'pre'))
     train_dir_tf = '/'.join((train_dir, 'tf'))
     experiment_type = sys.argv[3]
-
 
     if experiment_type == 'train': 
         if not os.path.exists(train_dir):
