@@ -13,20 +13,28 @@ from preprocess import *
 
 from collections import defaultdict
 
-BATCH_SIZE = 1000
+BATCH_SIZE = 500
 VALIDATION_FREQUENCY = 10
 CHECKPOINT_FREQUENCY = 50
-BATCHES = 10000
+BATCHES = 300
 SEQ_LENGTH = QNLS_PER_PHRASE * TOKENS_PER_QNL
-
+LEARNING_RATE = 1e-2
+HIDDEN_STATE_SIZE = 150
 
 ## Model class is adatepd from model.py found here
 ## https://github.com/monikkinom/ner-lstm/
 class Model:
-    def __init__(self, output_dim, hidden_state_size=150):
+    def __init__(self, output_dim, global_step, hidden_state_size=HIDDEN_STATE_SIZE):
         self._output_dim = output_dim
         self._hidden_state_size = hidden_state_size
-        self._optimizer = tf.train.AdamOptimizer(1e-4)
+        self._learning_rate = tf.train.exponential_decay(
+            LEARNING_RATE,
+            global_step,
+            100,
+            0.1,
+            staircase=True
+        )
+        self._optimizer = tf.train.AdamOptimizer(self._learning_rate)
 
     # Adapted from https://github.com/monikkinom/ner-lstm/blob/master/model.py __init__ function
     def create_placeholders(self):
@@ -115,6 +123,7 @@ class Model:
 
     def add_accuracy_summary(self):
         tf.summary.scalar('Accuracy', self._average_accuracy)
+        tf.summary.scalar('Learning Rate', self._learning_rate)
 
     def add_composer_summary(self):
         for i, c in enumerate(Composers.objs):
@@ -275,16 +284,12 @@ def compute_summary_metrics(sess, m, validation):
 
 def train(training, validation, train_dir):
     print "Begin Training"
-    m = Model(Composers.max)
     with tf.Graph().as_default():
         global_step = tf.Variable(0, trainable=False)
+        m = Model(Composers.max, global_step)   
         m.create_placeholders()
         m.create_graph()
         train_op = m.get_train_op(m.loss, global_step)
-
-        ## create saver object which helps in checkpointing
-        ## the model
-        saver = tf.train.Saver(tf.global_variables()+tf.local_variables())
 
         ## add scalar summaries for loss, accuracy
         m.add_accuracy_summary()
@@ -296,6 +301,8 @@ def train(training, validation, train_dir):
         init = tf.global_variables_initializer()
         sess = tf.Session(config=tf.ConfigProto())
         sess.run(init)
+
+        saver = tf.train.Saver()
 
         summary_writer = tf.summary.FileWriter(train_dir, sess.graph)
         j = 0
@@ -326,40 +333,49 @@ def train(training, validation, train_dir):
 ## Check performance on held out test data
 ## Loads most recent model from train_dir
 ## and applies it on test data
-def test(sentence_words_test, sentence_tags_test,
-         vocab_size, no_pos_classes, train_dir):
-    m = Model(vocab_size, MAX_LENGTH, no_pos_classes)
+def test(test, train_dir):
     with tf.Graph().as_default():
         global_step = tf.Variable(0, trainable=False)
+        m = Model(Composers.max, global_step)
         m.create_placeholders()
         m.create_graph()
         saver = tf.train.Saver(tf.global_variables())
         with tf.Session() as sess:
-            ckpt = tf.train.get_checkpoint_state(train_dir)
-            if ckpt and ckpt.model_checkpoint_path:
-                saver.restore(sess, ckpt.model_checkpoint_path)
+            ckpt = tf.train.latest_checkpoint(train_dir)
+            if ckpt:
+                saver.restore(sess, ckpt)
 
-                global_step = ckpt.model_checkpoint_path.split('/')[-1].split('-')[-1]
-            test_loss, test_accuracy, test_oov_accuracy = compute_summary_metrics(sess, m, sentence_words_test,
-                                                               sentence_tags_test)
+                global_step = ckpt.split('/')[-1].split('-')[-1]
+            test_loss, test_accuracy, group_accuracy, composer_accuracy = compute_summary_metrics(sess, m, test)
             print 'Test Accuracy: {:.3f}'.format(test_accuracy)
             print 'Test Loss: {:.3f}'.format(test_loss)
-            print 'Test OoV Accuracy {:.3f}'.format(test_oov_accuracy)
-
-
+            print 'Group Accuracy {:.3f}'.format(group_accuracy)
+            for c in composer_accuracy:
+                print '{} Accuracy {:.3f}'.format(c, composer_accuracy[c])
 
 if __name__ == '__main__':
     dataset_path = sys.argv[1]
     train_dir = sys.argv[2]
+    train_dir_pre = '/'.join((train_dir, 'pre'))
+    train_dir_tf = '/'.join((train_dir, 'tf'))
     experiment_type = sys.argv[3]
 
-    training, validation, test = process_dataset(dataset_path)
-    # X_test, y_test= pieces2Mat(test)
 
-    if experiment_type == 'train':
-        if os.path.exists(train_dir):
-            shutil.rmtree(train_dir)
-        os.mkdir(train_dir)
-        train(training, validation, train_dir)
+    if experiment_type == 'train': 
+        if not os.path.exists(train_dir):
+            os.mkdir(train_dir)
+        if os.path.exists(train_dir_pre):
+            shutil.rmtree(train_dir_pre)
+        os.mkdir(train_dir_pre)
+        training = process_dataset(dataset_path, 'train')
+        validation = process_dataset(dataset_path, 'val')
+        save_preprocess_vars(train_dir_pre)
+
+        if os.path.exists(train_dir_tf):
+            shutil.rmtree(train_dir_tf)
+        os.mkdir(train_dir_tf)
+        train(training, validation, train_dir_tf)
     else:
-        test(X_test, y_test, train_dir)
+        load_preprocess_vars(train_dir_pre)
+        testing = process_dataset(dataset_path, 'test')
+        test(testing, train_dir_tf)

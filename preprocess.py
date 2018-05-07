@@ -3,14 +3,24 @@ import numpy as np
 from os import listdir
 import os
 import sys
+from random import shuffle
 import pickle
 
-QNLS_PER_PHRASE = 4
-TOKENS_PER_QNL = 8
-NOTE_RANGE = 128
+QNLS_PER_PHRASE = 8
+TOKENS_PER_QNL = 4
+SAMPLES_PER_PIECE = 100
+NOTE_RANGE = 139
 TRAIN_SAMPLES = -12500
 VAL_SAMPLES = -1000
 TEST_SAMPLES = -1000
+NCOMPOSERS = 50
+
+
+KEY_SHIFT = {
+    'C': 0, 'B#': 0, 'Cb': 1, 'B': 1, 'Bb': 2, 'A#': 2, 'A': 3, 'Ab': 4, 'G#': 4,
+    'G': 5, 'Gb': 6, 'F#': 6, 'F': 7, 'E#': 7, 'Fb': 8, 'E': 8, 'Eb': 9, 'D#': 9,
+    'D': 10, 'Db': 11, 'C#': 11, 'unknown': 0
+}
 
 class ObjectIndex(object):
     def __init__(self, maximum=-1):
@@ -28,8 +38,12 @@ class ObjectIndex(object):
     def getObject(self, i):
         return self.objs[i]
 
+    def copyFrom(self, other):
+        self.objs = other.objs
+        self.max = other.max
 
-Composers = ObjectIndex(20)
+
+Composers = ObjectIndex(NCOMPOSERS)
 TimeSignatures = ObjectIndex(50)
 KeySignatures = ObjectIndex(52)
 
@@ -58,6 +72,7 @@ class IntervalSet(object):
     def finalize(self, end):
         for id in self.pos_edge:
             self.addNegEdge(id, end)
+
 
 
 class MusicPiece(object):
@@ -102,24 +117,44 @@ class MusicPiece(object):
         self.time_sigs.finalize(self.qnls)
         self.keys.finalize(self.qnls)
 
+        self.normalize_notes()
+
         self.examples = self.getTrainingExamples()
 
-    def getTrainingExamples(self, qnls=QNLS_PER_PHRASE, gran=TOKENS_PER_QNL):
-        print 'Processing %s' % self.path
-        label = self.labelVec()
-        samples = np.arange(0, self.qnls, qnls)
-        np.random.shuffle(samples)
-        if len(samples) > 100:
-            samples = samples[:100]
-        return [self.featureSeq(s, qnls, gran) for s in samples if s + qnls <= self.qnls]
+        print 'Processed %s (%d notes, %d keys, %d times, %d tempos, %d examples)' % (
+            self.path, 
+            len(self.notes.intervals),
+            len(self.keys.intervals),
+            len(self.time_sigs.intervals),
+            len(self.tempos.intervals),
+            len(self.examples)
+        )
 
-    def featureSeq(self, start, qnls=QNLS_PER_PHRASE, gran=TOKENS_PER_QNL):
-        mat = np.zeros((qnls * gran, NFEATURES))
-        for i, t in enumerate(np.arange(start, start+qnls, float(1)/gran)):
-            mat[i, self.notes.getValuesAt(t)] = 1 # Notes
-            mat[i, NOTE_RANGE] = self.tempos.getValuesAt(t)[0] # Tempo
-            mat[i, NOTE_RANGE + 1 + self.time_sigs.getValuesAt(t)[0]] = 1 # Timesig
-            mat[i, NOTE_RANGE + 1 + TimeSignatures.max + self.keys.getValuesAt(t)[0]] = 1 # Key
+    def fillMat(self, mat, intervals, one_hot=True, offset=0, gran=TOKENS_PER_QNL):
+        for (start, end, v) in intervals:
+            length = int((end - start) * gran)
+            start = int(start * gran)
+            if one_hot:
+                mat[start:start+length, v + offset] = np.ones(length)
+            else:
+                mat[start:start+length, offset] = v * np.ones(length)
+
+    def toMat(self, gran=TOKENS_PER_QNL):
+        mat = np.zeros((int(self.qnls * gran), NFEATURES))
+        self.fillMat(mat, self.notes.intervals, gran=gran)
+        self.fillMat(mat, self.tempos.intervals, one_hot=False, offset=NOTE_RANGE, gran=gran)
+        self.fillMat(mat, self.time_sigs.intervals, offset=NOTE_RANGE+1, gran=gran)
+        self.fillMat(mat, self.keys.intervals, offset=NOTE_RANGE+1+TimeSignatures.max, gran=gran)
+        return mat
+
+    def getTrainingExamples(self, qnls=QNLS_PER_PHRASE, gran=TOKENS_PER_QNL, limit=SAMPLES_PER_PIECE):
+        mat = self.toMat(gran)
+        samples = np.split(mat, np.arange(0, self.qnls*gran, qnls*gran, dtype=np.int32))
+        samples = samples[1:-1]
+        shuffle(samples)
+        if len(samples) > SAMPLES_PER_PIECE:
+            samples = samples[:SAMPLES_PER_PIECE]
+        return samples
 
         return mat
 
@@ -131,48 +166,40 @@ class MusicPiece(object):
         composer_vec[self.composer] = 1
         return composer_vec
 
+    def normalize_notes(self):
+        for i, (start, end, note) in enumerate(self.notes.intervals):
+            note = self.transpose(note, self.keys.getValuesAt(start)[0])
+            self.notes.intervals[i] = (start, end, note)
 
-def process_dataset(path):
-    train = {}
-    val = {}
-    test = {}
+    def transpose(self, note, key):
+        key = KeySignatures.getObject(key)
+        if key[-1] == 'm':
+            key = key[:-1]
 
-    for composer in listdir(path):
-        train[composer] = get_examples('/'.join((path, composer, 'train')), composer, TRAIN_SAMPLES)
-        val[composer] = get_examples('/'.join((path, composer, 'val')), composer, VAL_SAMPLES)
-        test[composer] = get_examples('/'.join((path, composer, 'test')), composer, TEST_SAMPLES)
+        return note + KEY_SHIFT[key]
 
-    return train, val, test
 
-def get_examples(path, composer, limit):
+def process_dataset(path, split):
+    return {c: get_examples('/'.join((path, c, split)), c) for c in listdir(path)}
+
+def get_examples(path, composer):
     examples = []
     for midi in listdir(path):
         m = MusicPiece(composer, '/'.join((path, midi)))
         if m.qnls <= QNLS_PER_PHRASE: # Too short
             continue;
         examples.append(m)
-        limit -= m.length()
-        # if limit <= 0:
-            # break
 
     return examples
 
+def save_preprocess_vars(path):
+    path = '/'.join((path, 'indices.pkl'))
+    pickle.dump((Composers, TimeSignatures, KeySignatures), open(path, 'wb'))
 
-if __name__ == '__main__':
-    root_path = sys.argv[1]
-    output = sys.argv[2]
-    processed = process_dataset(root_path)
+def load_preprocess_vars(path):
+    path = '/'.join((path, 'indices.pkl'))
+    c, t, k = pickle.load(open(path, 'rb'))
+    Composers.copyFrom(c)
+    TimeSignatures.copyFrom(t)
+    KeySignatures.copyFrom(k)
 
-    # for composer in listdir(root_path):
-    #     print "Processing %s" % composer
-    #     subdir = root_path + '/' + composer
-    #     composer_examples = []
-    #     for midi in listdir(subdir):
-    #         m = MusicPiece(composer, subdir + '/' + midi)
-    #         composer_examples += m.getTrainingExamples()
-    #         if len(composer_examples) > TRAIN_SAMPLES:
-    #             break;
-
-    #     processed += composer_examples
-
-    pickle.dump(processed, open(output, 'wb'))
