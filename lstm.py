@@ -16,7 +16,7 @@ from collections import defaultdict
 BATCH_SIZE = 500
 VALIDATION_FREQUENCY = 10
 CHECKPOINT_FREQUENCY = 50
-BATCHES = 300
+BATCHES = 450
 SEQ_LENGTH = QNLS_PER_PHRASE * TOKENS_PER_QNL
 LEARNING_RATE = 1e-2
 HIDDEN_STATE_SIZE = 150
@@ -30,7 +30,7 @@ class Model:
         self._learning_rate = tf.train.exponential_decay(
             LEARNING_RATE,
             global_step,
-            100,
+            150,
             0.1,
             staircase=True
         )
@@ -53,7 +53,7 @@ class Model:
         self.create_placeholders()
 
         ## Create forward and backward cell
-        forward_cell = tf.contrib.rnn.LSTMCell(self._hidden_state_size, state_is_tuple=True)
+        cell = tf.contrib.rnn.LSTMCell(self._hidden_state_size, state_is_tuple=True)
 
         ## Embedd the very large input vector into a smaller dimension
         ## This is for computational tractability
@@ -66,7 +66,7 @@ class Model:
         ## into a list of tensors (one per time step)
         with tf.variable_scope("lstm"):
             outputs_, _ = tf.nn.dynamic_rnn(
-                forward_cell,
+                cell,
                 lstm_input,
                 dtype=tf.float32,
             )
