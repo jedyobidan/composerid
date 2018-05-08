@@ -185,7 +185,10 @@ def process_dataset(path, split):
 def get_examples(path, composer):
     examples = []
     for midi in listdir(path):
-        m = MusicPiece(composer, '/'.join((path, midi)))
+        try:
+            m = MusicPiece(composer, '/'.join((path, midi)))
+        except Exception as e:
+            print 'Failed to process %s' % '/'.join((path, midi))
         if m.qnls <= QNLS_PER_PHRASE: # Too short
             continue;
         examples.append(m)
