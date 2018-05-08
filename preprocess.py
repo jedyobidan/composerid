@@ -189,8 +189,9 @@ def get_examples(path, composer):
             m = MusicPiece(composer, '/'.join((path, midi)))
         except Exception as e:
             print 'Failed to process %s' % '/'.join((path, midi))
+            continue
         if m.qnls <= QNLS_PER_PHRASE: # Too short
-            continue;
+            continue
         examples.append(m)
 
     return examples
