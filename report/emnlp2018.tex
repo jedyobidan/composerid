@@ -49,13 +49,7 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-  This document contains the instructions for preparing a camera-ready
-  manuscript for the proceedings of \confname{}. The document itself
-  conforms to its own specifications, and is therefore an example of
-  what your manuscript should look like. These instructions should be
-  used for both papers submitted for review and for final versions of
-  accepted papers.  Authors are asked to conform to all the directions
-  reported in this document.
+Music is the ultimate language.
 \end{abstract}
 
 \section{Credits}
@@ -79,91 +73,33 @@ instructions of the {\em International Joint Conference on Artificial
   Pattern Recognition}.
 
 \section{Introduction}
-It has been more than four decades since Leonard Bernstein called on researchers at his famous lecture at Hardvard University \cite{Bernstein} to uncover a musical grammar similar to Noam Chomsky's generative grammar \cite{Chomsky}.
 
-Inspired by Bernstein's speech, American linguist Ray Jackendoff and music theorist Fred Lerdahl presented a theory of music which is called A generative theory of tonal music (GTTM) with the goal of illustrating human's understanding of music. Ever since, a number of researchers developed different models for musical grammars. Such models shows that there is a strict hierarachical structure in a musical components. Inspired by these work, we decided to see if computers can find such structures in music and identify the composer correctly based on their style. 
+It has been more than four decades since Leonard Bernstein called on researchers at his famous lecture at Hardvard University \cite{Bernstein} to create a musical grammar similar to Noam Chomsky's generative grammar \cite{Chomsky}.\\
+Inspired by Bernstein's speech, American linguist Ray Jackendoff and music theorist Fred Lerdahl presented A generative theory of tonal music (GTTM) with the goal of illustrating human's understanding of music. This theory has been influential and inspired further work by other researchers in the field of music cognition which then lead to the creation of musical grammar and inspired other researchers to develop different models for musical grammars. Such models shows that there is a strict hierarachical structure in a musical components. \\
+These hierarchical structure which we can refer to as a musical style is intrinsic to human nature. A generative theory of tonal music also constitudes a formal description of the musical instinct of a listener. An average person can tell the difference between a symphony by Mozart and a motet by Josquin Des Prez. With the advances in technology and computers a new problem has been created and that is to see if computers can also find these differences. There has been a number of studies on rule based approaches for this problem. Previous works mostly includes producing a generative grammar to capture stylistics features of a musical pieces. However, these studies show that musical style happens in ways musicology and cognative approaches are still unable to perfectly define them. In this paper, we transform the style recognition problem into a sequence classifier problem and train an LSTM as a sequence classifier.\\
+One of the challenges of this work is to extract useful musical features for building an accurate classification model. There are number of ways to extract these musical structures and features from a dataset.  In this work, we are looking at high level features extracted from MIDI files; e.g., pitch, duration, tempo, key signature and time signature. MIDI files are symbolic music representations that contain very high level structured information about music. MIDI files describe the start, duration, tempo, volume, and instrument of each note in a musical fragment. The other option would have been to extract information from audio recording of a music which is not the goal of this study.\\ 
+In this paper, we are looking at a new approach for building a composer-classification model that can accuratly identify the composer of a musical piece. Previous studies on composer recognizer probelm were mostly resulted in a binary model that could only recognize if a musical piece was written by a specific composer or not. There has been quite a few studies on a multi-class models but these studies are usually limited to 4 composers.  However, in this paper we introduce a state of the art model to recognize a class of composers with the size of as three times larger than the current state of the art multi class identifier. The rest of the paper is organized as follows. Section 2 reviews related work. Section 3 explains our approach for building the composer-classification model. Section 4 presents and discuss the measurement results. Section 5 concludes with summary and future work.
 
-These hierarchical structure which we can refer to as a musical style is intrinsic to human nature; an average person can tell the difference between a symphony by Mozart and a motet by Josquin Des Prez. The interesting question is to see if computers can also find these differences. In the past, there has been a number of studies on rule based approaches that involve producing a generative grammar to capture the stylistic features of a musical piece. However, these studies show that there are some aspects of musical style that prove difficult for musicology and cognitive approaches to perfectly define. In this paper, we instead explore a machine learning approach to identifying musical style; specifically, treating style identification as a sequence classification problem. In this way, we can leverage the power of standard sequence classification techniques, such as LSTMs.
-
-For this paper, we decided to use the Kern Scores dataset, which provides thousands of musical scores from several composers in various formats. We chose to use the MIDI format for its ease of parsing and adequete expressiveness. Importantly, the MIDI format is a symbolic representation of music, so using it removes any potential noise induced by a particular performance of the piece. MIDI primarily expresses the pitch and length of the notes in the piece, as the composer wrote it. It also provides some useful meta information about the piece, including its tempo, key signature, and time signature. We leverage this information to improve our classification model. Notably, MIDI can provide volume and instrumentation information about the notes as well; however, a cursory examination of the dataset reveals that it is not consistently provided, so we chose not to include it for safety.
-
-In this paper, we explore a new approach for building a composer-classification model by using existing ideas from sequence classification. Specifically, we would like to perform multiclass classification with supervised training to identify the composer of a musical piece. The rest of this paper is structured as follows: Section II is related work; in section III we discuss our approach for building our classification model; section IV outlines our experiments and results; section V contains concluding remarks and possible future work.
 
 \section{Related Works}
+
 The field of music information retrieval (MIR) has become a growing field in recent years. 
-With the discovery of new techniques in machine learning and deep learning, recognizing a musical piece composer has become at the center of attention in the field of music information retrieval (MIR). In 2002 Buzzanca \cite{Buzz} used a supervised learning approach for musical style recognition of Giovanni Pierluigi da Palestrina. He implemented a neural network that could recognize Pierluigi with the accuracy of 97\% on the test set. There has been a few studies on style recognition using an n-gram model. Wolkowicz, Kulka, and Keselj \cite{n-gram} used an n-gram model to classify piano files of five composers.  Hillewaere, Manderick, and Conklin \cite{Hillewaere} also used n-gram models to classify musical pieces of two composers (Haydn and Mozart). They achieved the accuracy of 61\%. 
-Mearns, Tidhar, and Dixon \cite{Mearns} used a decision tree and naive Bayes models to classify similar musical pieces. The correctly classified 44 out of 66 pieces with seven class ofcomposers. Dor and Reich \cite{Dor} achieved an accuracy of 75\% in classifying keyboard scores between Mozart and Haydn by building a system of decision tree, naive Bayes, support vector machines, and RIPPER classifier.
-Herremans, Sorensen, and Martens built a four composer-classification model using a logistic regression model and a support vector machine classifier. They achieved an accuracy of 86\%. 
-In this paper, we use a brand new approach to tackle composer identifier problem. We use a Long Short Term Memory (LSTM) architecture to produce a composer-classification model to recognize the composer from a musical piece. 
+With the advances of new techniques in machine learning and deep learning, recognizing a musical piece composer has become  the center of attention in the field of music information retrieval (MIR).\\
+In 2002 Buzzanca \cite{Buzz} used a supervised learning approach for musical style recognition of Giovanni Pierluigi da Palestrina. He implemented a neural network that could recognize Pierluigi style with the accuracy of 97\% on the test set. \\
+There has been a few studies on style recognition using an n-gram model. Wolkowicz, Kulka, and Keselj \cite{n-gram} used an n-gram model to classify piano files of five composers.  Hillewaere, Manderick, and Conklin \cite{Hillewaere} also used n-gram models to classify musical pieces of two composers (Haydn and Mozart). They achieved the accuracy of 61\%.\\ 
+Mearns, Tidhar, and Dixon \cite{Mearns} used a decision tree and naive Bayes models to classify similar musical pieces. The correctly classified 44 out of 66 pieces with seven class ofcomposers. Dor and Reich \cite{Dor} achieved an accuracy of 75\% in classifying keyboard scores between Mozart and Haydn by building a system of decision tree, naive Bayes, support vector machines, and RIPPER classifier. \\
+Herremans, Sorensen, and Martens \cite {Herremans} built a four composer-classification model using a logistic regression model and a support vector machine classifier. They achieved an accuracy of 86\%. 
+In this paper, we present a brand new approach to tackle the composer identifier problem. We use a Long Short Term Memory (LSTM) architecture to produce a composer-classification model to recognize the composer from a musical piece. Our model is a multi-class classifier that can be used to identify the composer of a musical piece. 
+
 
 \section{Approach}
-To solve this problem, we are taking a neural network based approach to multiclass classification. We divide the dataset into training, validation, and test datasets, with an 80:10:10 split.
+To solve this problem, we are taking a neural network based approach to multiclass classification. We divide the dataset into training, validation, and test datasets, with an $80:10:10$ split. The first step is to preprocess the MIDI file into a sequence of feature vectors. We subdivide the MIDI file into 32nd note divisions in time, and for each division we compute a set of features. The most important feature is what notes are being played at that division of time; this corresponds to the time between the \texttt{note\_on}  and \texttt{note\_off}  messages in the file. At this stage, we also transpose the notes into the key of C or C minor based on the currently active key signature. This helps normalize the data and remove any noise caused by key selection. We then convert the set of notes being played into a one-hot vector. We also extract the tempo, time signature, and key signature from each division of time and concatenate those features to the note feature (tempo being treated as continuous, while time and key are treated as categorical one-hot vectors). We then take each continuous  segment of 64 divisions (2 measures of music in 4/4 time) as one training example.\\
+The input sequence is then passed into an LSTM layer. We found that using a 150 length hidden state vector achieved the best results over our validation dataset. Our architecture allows users to set various parameters such as number if hidden layers, sequence length, batch size, and learning rate. The final output of the LSTM layer is then passed into a fully connected linear layer, and finally into a softmax layer to compute the probabilities for each composer. We then pick the composer with the highest probability as the final result. For more accurate results, we take the prediction from multiple musical samples of the same composer and take the majority, i.e. if we look at 32 beats, we try to predict every 8 beat, grouping the results and take the majority as our final prediction. \\
+To train the network, we are using mini-batches of size 500 and the Adam optimizer with a decaying learning rate. Since our dataset is highly imbalanced (we have several times more examples from Beethoven/Bach than lesser known composers), we oversample the composers with fewer unique examples to compensate. The optimizer is set to minimize the cross entropy over the training dataset. The loss corresponds to the cross entropy error of our prediction compared to the actual composer of the musical piece. Our deep learning implementation was done in TensorFlow.\\
 
-The first step is to preprocess the MIDI file into a sequence of feature vectors. We subdivide the MIDI file into 32nd note divisions in time, and for each division we compute a set of features. The most important feature is what notes are being played at that division of time; this corresponds to the time between the \texttt{note_on} and \texttt{note_off} messages in the file. At this stage, we also transpose the notes into the key of C or C minor based on the currently active key signature. This helps normalize the data and remove any noise caused by key selection. We then convert the set of notes being played into a one-hot vector. We also extract the tempo, time signature, and key signature from each division of time and concatenate those features to the note feature (tempo being treated as continuous, while time and key are treated as categorical one-hot vectors). We then take each continugous segment of 64 divisions (2 measures of music in 4/4 time) as one training example.
+\section{Experiments}
 
-The input sequence is then passed into an LSTM layer. We found that using a 150 length hidden state vector achieved the best results over our validation dataset. The final output of the LSTM layer is then passed into a fully connected linear layer, and finally into a softmax layer to compute the probabilities for each composer. We then pick the composer with the highest probability as the final result.
-
-[Insert network architecture diagram]
-
-To train the network, we are using mini-batches of size 500 an the Adam optimizer with a decaying learning rate. Since our dataset is highly imbalanced (we have several times more examples from Beethoven/Bach than lesser known composers), we oversample the composers with fewer unique examples to compensate. The optimizer is set to minimize the cross entropy over the training dataset.
-
-\section{Experiments and Results}
-
-\section{Conclusions and Future Work}
-Notes on future work: better feature engineering, more expansive dataset, tuning hyperparameters, trying a deep learning approach.
-
-\section{Related }
-
-Manuscripts must be in two-column format.  Exceptions to the
-two-column format include the title, authors' names and complete
-addresses, which must be centered at the top of the first page, and
-any full-width figures or tables (see the guidelines in
-Subsection~\ref{ssec:first}). {\bf Type single-spaced.}  Start all
-pages directly under the top margin. See the guidelines later
-regarding formatting the first page.  The manuscript should be
-printed single-sided and its length
-should not exceed the maximum page limit described in Section~\ref{sec:length}.
-Pages are numbered for  initial submission. However, {\bf do not number the pages in the camera-ready version}.
-
-By uncommenting {\small\verb|\aclfinalcopy|} at the top of this 
- document, it will compile to produce an example of the camera-ready formatting; by leaving it commented out, the document will be anonymized for initial submission.
-
-The review process is double-blind, so do not include any author information (names, addresses) when submitting a paper for review.  
-However, you should maintain space for names and addresses so that they will fit in the final (accepted) version.  The \confname{} \LaTeX\ style will create a titlebox space of 2.5in for you when {\small\verb|\aclfinalcopy|} is commented out.  
-
-The author list for submissions should include all (and only) individuals who made substantial contributions to the work presented. Each author listed on a submission to \confname{} will be notified of submissions, revisions and the final decision. No authors may be added to or removed from submissions to \confname{} after the submission deadline.
-
-\subsection{The Ruler}
-The \confname{} style defines a printed ruler which should be presented in the
-version submitted for review.  The ruler is provided in order that
-reviewers may comment on particular lines in the paper without
-circumlocution.  If you are preparing a document without the provided
-style files, please arrange for an equivalent ruler to
-appear on the final output pages.  The presence or absence of the ruler
-should not change the appearance of any other content on the page.  The
-camera ready copy should not contain a ruler. (\LaTeX\ users may uncomment the {\small\verb|\aclfinalcopy|} command in the document preamble.)  
-
-Reviewers: note that the ruler measurements do not align well with
-lines in the paper -- this turns out to be very difficult to do well
-when the paper contains many figures and equations, and, when done,
-looks ugly. In most cases one would expect that the approximate
-location will be adequate, although you can also use fractional
-references ({\em e.g.}, the first paragraph on this page ends at mark $108.5$).
-
-\subsection{Electronically-available resources}
-
-\conforg{} provides this description in \LaTeX2e{} ({\small\tt
-  emnlp2018.tex}) and PDF format ({\small\tt emnlp2018.pdf}), along
-with the \LaTeX2e{} style file used to format it ({\small\tt
-  emnlp2018.sty}) and an ACL bibliography style ({\small\tt
-  acl\_natbib\_nourl.bst}) and example bibliography ({\small\tt
-  emnlp2018.bib}).  These files are all available at
-\url{http://emnlp2018.org/downloads/emnlp18-latex.zip}; a Microsoft
-Word template file ({\small\tt emnlp18-word.docx}) and example
-submission pdf ({\small\tt emnlp18-word.pdf}) is available at
-\url{http://emnlp2018.org/downloads/emnlp18-word.zip}.  We strongly
-recommend the use of these style files, which have been appropriately
-tailored for the \confname{} proceedings.
+\subsection{Data}
 
 \subsection{Format of Electronic Manuscript}
 \label{sect:pdf}
