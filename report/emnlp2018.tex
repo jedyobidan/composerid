@@ -31,7 +31,7 @@
 \newcommand\confname{EMNLP 2018}
 \newcommand\conforg{SIGDAT}
 
-\title{Instructions for \confname{} Proceedings}
+\title{Bachprop: using neural networks to solve composer classification}
 
 \author{First Author \\
   Affiliation / Address line 1 \\
@@ -49,57 +49,110 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-Music is the ultimate language.
+Music is the ultimate language and shares many common features with the natural language . Both are methods of communication, and have been analyzed in depth and broken down into component parts (grammar for natural languages, rhythms/melodies/harmonies for music). 
 \end{abstract}
-
-\section{Credits}
-
-This document has been adapted from the instructions for earlier ACL
-and NAACL proceedings. It represents a recent build from
-\url{https://github.com/acl-org/acl-pub}, with modifications by Micha
-Elsner and Preethi Raghavan, based on the NAACL 2018 instructions by
-Margaret Michell and Stephanie Lukin, 2017/2018 (NA)ACL bibtex
-suggestions from Jason Eisner, ACL 2017 by Dan Gildea and Min-Yen Kan,
-NAACL 2017 by Margaret Mitchell, ACL 2012 by Maggie Li and Michael
-White, those from ACL 2010 by Jing-Shing Chang and Philipp Koehn,
-those for ACL 2008 by Johanna D. Moore, Simone Teufel, James Allan,
-and Sadaoki Furui, those for ACL 2005 by Hwee Tou Ng and Kemal
-Oflazer, those for ACL 2002 by Eugene Charniak and Dekang Lin, and
-earlier ACL and EACL formats.  Those versions were written by several
-people, including John Chen, Henry S. Thompson and Donald
-Walker. Additional elements were taken from the formatting
-instructions of the {\em International Joint Conference on Artificial
-  Intelligence} and the \emph{Conference on Computer Vision and
-  Pattern Recognition}.
 
 \section{Introduction}
 
-It has been more than four decades since Leonard Bernstein called on researchers at his famous lecture at Hardvard University \cite{Bernstein} to create a musical grammar similar to Noam Chomsky's generative grammar \cite{Chomsky}.\\
-Inspired by Bernstein's speech, American linguist Ray Jackendoff and music theorist Fred Lerdahl presented A generative theory of tonal music (GTTM) with the goal of illustrating human's understanding of music. This theory has been influential and inspired further work by other researchers in the field of music cognition which then lead to the creation of musical grammar and inspired other researchers to develop different models for musical grammars. Such models shows that there is a strict hierarachical structure in a musical components. \\
-These hierarchical structure which we can refer to as a musical style is intrinsic to human nature. A generative theory of tonal music also constitudes a formal description of the musical instinct of a listener. An average person can tell the difference between a symphony by Mozart and a motet by Josquin Des Prez. With the advances in technology and computers a new problem has been created and that is to see if computers can also find these differences. There has been a number of studies on rule based approaches for this problem. Previous works mostly includes producing a generative grammar to capture stylistics features of a musical pieces. However, these studies show that musical style happens in ways musicology and cognative approaches are still unable to perfectly define them. In this paper, we transform the style recognition problem into a sequence classifier problem and train an LSTM as a sequence classifier.\\
+It has been more than four decades since Leonard Bernstein called on researchers at his famous lecture at Hardvard University \cite{Bernstein} to create a musical grammar similar to Noam Chomsky's generative grammar \cite{Chomsky}.
+Inspired by Bernstein's speech, American linguist Ray Jackendoff and music theorist Fred Lerdahl presented A generative theory of tonal music (GTTM) with the goal of illustrating human's understanding of music. This theory has been influential and inspired further work by other researchers in the field of music cognition which then lead to the creation of musical grammar and inspired other researchers to develop different models for musical grammars. Such models shows that there is a strict hierarchical structure in a musical components. With the advances in technology and computers a new problem has been created and that is to see if computers can also find these strict hierarchical structure in a musical components. In this paper, we developed a model that could identify the composer of a musical piece using these hierarchical structures in a musical component.\\
+
+In this paper, we used NLP techniques to analyze musical passages. A musical piece is broken down into component parts and transform it into a sequence classifier problem and train an LSTM as a sequence classifier. There has been a number of studies on rule based approaches for this problem. Previous works mostly includes producing a generative grammar to capture stylistics features of a musical pieces. However, these studies show that musical style happens in ways musicology and cognitive approaches are still unable to perfectly define them. We believe our approach can cover this flaw and produce better results than those works. \\
+
 One of the challenges of this work is to extract useful musical features for building an accurate classification model. There are number of ways to extract these musical structures and features from a dataset.  In this work, we are looking at high level features extracted from MIDI files; e.g., pitch, duration, tempo, key signature and time signature. MIDI files are symbolic music representations that contain very high level structured information about music. MIDI files describe the start, duration, tempo, volume, and instrument of each note in a musical fragment. The other option would have been to extract information from audio recording of a music which is not the goal of this study.\\ 
-In this paper, we are looking at a new approach for building a composer-classification model that can accuratly identify the composer of a musical piece. Previous studies on composer recognizer probelm were mostly resulted in a binary model that could only recognize if a musical piece was written by a specific composer or not. There has been quite a few studies on a multi-class models but these studies are usually limited to 4 composers.  However, in this paper we introduce a state of the art model to recognize a class of composers with the size of as three times larger than the current state of the art multi class identifier. The rest of the paper is organized as follows. Section 2 reviews related work. Section 3 explains our approach for building the composer-classification model. Section 4 presents and discuss the measurement results. Section 5 concludes with summary and future work.
+
+In this paper, we are looking at a new approach for building a composer-classification model that can accurately identify the composer of a musical piece. Previous studies on composer recognizer problem were mostly resulted in a binary model that could only recognize if a musical piece was written by a specific composer or not. There has been quite a few studies on a multi-class models but these studies are usually limited to 3 composers.  However, in this paper we introduce a state of the art model to recognize a class of composers with the size of as three times larger than the current state of the art multi class identifier and produces a better accuracy compared to the previous models. The rest of the paper is organized as follows. Section 2 reviews related work. Section 3 explains our approach for building the composer-classification model. Section 4 presents and discuss the measurement results. Section 5 concludes with summary and future work.
 
 
 \section{Related Works}
 
-The field of music information retrieval (MIR) has become a growing field in recent years. 
-With the advances of new techniques in machine learning and deep learning, recognizing a musical piece composer has become  the center of attention in the field of music information retrieval (MIR).\\
-In 2002 Buzzanca \cite{Buzz} used a supervised learning approach for musical style recognition of Giovanni Pierluigi da Palestrina. He implemented a neural network that could recognize Pierluigi style with the accuracy of 97\% on the test set. \\
+With the advances of new techniques in machine learning and deep learning, recognizing a musical piece composer has become the center of attention in the field of music information retrieval (MIR).\\
+Buzzanca \cite{Buzz} used a supervised learning approach for musical style recognition of Giovanni Pierluigi da Palestrina. He implemented a neural network that could recognize Pierluigi style with the accuracy of 97\% on the test set. \\
 There has been a few studies on style recognition using an n-gram model. Wolkowicz, Kulka, and Keselj \cite{n-gram} used an n-gram model to classify piano files of five composers.  Hillewaere, Manderick, and Conklin \cite{Hillewaere} also used n-gram models to classify musical pieces of two composers (Haydn and Mozart). They achieved the accuracy of 61\%.\\ 
 Mearns, Tidhar, and Dixon \cite{Mearns} used a decision tree and naive Bayes models to classify similar musical pieces. The correctly classified 44 out of 66 pieces with seven class ofcomposers. Dor and Reich \cite{Dor} achieved an accuracy of 75\% in classifying keyboard scores between Mozart and Haydn by building a system of decision tree, naive Bayes, support vector machines, and RIPPER classifier. \\
-Herremans, Sorensen, and Martens \cite {Herremans} built a four composer-classification model using a logistic regression model and a support vector machine classifier. They achieved an accuracy of 86\%. 
+Herremans, Sorensen, and Martens \cite {Herremans} built a four composer-classification models to understand the stylistic differemces between Beethoven, Bach, and Haydn.For the first two models they use an if-then rule set and a decision tree and for the other two models they use a logistic regression model and a support vector machine classifier which produce a more accurate results. They achieved an accuracy of 86\% for the best model. 
 In this paper, we present a brand new approach to tackle the composer identifier problem. We use a Long Short Term Memory (LSTM) architecture to produce a composer-classification model to recognize the composer from a musical piece. Our model is a multi-class classifier that can be used to identify the composer of a musical piece. 
 
 
 \section{Approach}
 To solve this problem, we are taking a neural network based approach to multiclass classification. We divide the dataset into training, validation, and test datasets, with an $80:10:10$ split. The first step is to preprocess the MIDI file into a sequence of feature vectors. We subdivide the MIDI file into 32nd note divisions in time, and for each division we compute a set of features. The most important feature is what notes are being played at that division of time; this corresponds to the time between the \texttt{note\_on}  and \texttt{note\_off}  messages in the file. At this stage, we also transpose the notes into the key of C or C minor based on the currently active key signature. This helps normalize the data and remove any noise caused by key selection. We then convert the set of notes being played into a one-hot vector. We also extract the tempo, time signature, and key signature from each division of time and concatenate those features to the note feature (tempo being treated as continuous, while time and key are treated as categorical one-hot vectors). We then take each continuous  segment of 64 divisions (2 measures of music in 4/4 time) as one training example.\\
-The input sequence is then passed into an LSTM layer. We found that using a 150 length hidden state vector achieved the best results over our validation dataset. Our architecture allows users to set various parameters such as number if hidden layers, sequence length, batch size, and learning rate. The final output of the LSTM layer is then passed into a fully connected linear layer, and finally into a softmax layer to compute the probabilities for each composer. We then pick the composer with the highest probability as the final result. For more accurate results, we take the prediction from multiple musical samples of the same composer and take the majority, i.e. if we look at 32 beats, we try to predict every 8 beat, grouping the results and take the majority as our final prediction. \\
+The input sequence is then passed into an LSTM layer. We found that using a 150 length hidden state vector achieved the best results over our validation dataset. Our architecture allows users to set various parameters such as number if hidden layers, sequence length, batch size, and learning rate. The final output of the LSTM layer is then passed into a fully connected linear layer, and finally into a softmax layer to compute the probabilities for each composer. We then pick the composer with the highest probability as the final result. For more accurate results, we take the prediction from multiple musical samples of the same composer and take the majority, i.e. if we look at 32 beats, we try to predict every 8 beat, grouping the results and take the majority as our final prediction. For better clarification, we use the term piece accuracy for computing the accuracy of this method.\\
 To train the network, we are using mini-batches of size 500 and the Adam optimizer with a decaying learning rate. Since our dataset is highly imbalanced (we have several times more examples from Beethoven/Bach than lesser known composers), we oversample the composers with fewer unique examples to compensate. The optimizer is set to minimize the cross entropy over the training dataset. The loss corresponds to the cross entropy error of our prediction compared to the actual composer of the musical piece. Our deep learning implementation was done in TensorFlow.\\
 
 \section{Experiments}
 
 \subsection{Data}
+In this paper we use the KernScores database which contains musical pieces as a MIDI files. The KernScores database is a large collection of virtual musical scores made available by the Center for Computer Assisted Research in the humanities at Stanford University (CCARH). The KernScores database has a total of $7866496$ notes and is available online at  kern.ccarh.org.
+For the baseline, we are comparing our results with the Herremans, Sorensen, and Martens \cite {Herremans} results. They also used the same database for running their experiments. Since they selected Bach, Beethoven, and Haydn for inclusion in their classification models, we also use these composers in our experimental results. An overview of the selected composers was given in table 1.
+
+\begin{table}[t!]
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline \bf Composers & \bf Examples \\ \hline
+Beethoven & 10526 \\
+Haydn & 9758 \\
+Bach & 8544\\
+Corelli & 3555\\
+Buxtehude & 3728\\
+Monteverdi & 302 \\
+Foster & 350\\
+Frescobaldi & 1904\\
+Josquin & 79\\
+Schumann & 82\\
+Joplin & 1788\\
+Gershwin & 890\\
+Giovannelli & 9758\\
+Mozart & 6733  \\
+\hline
+\end{tabular}
+\end{center}
+\caption{\label{composer-table}List of composers. }
+\end{table}
+
+\subsection{Baseline}
+For our baseline, we had results of  Herremans, Sorensen, and Martens \cite {Herremans} classifier on three composers Beethoven, Bach, and Haydn. Our model out perform their best model. In table 2, we are comparing our model with three diffrent models that they used in their paper. Since they use the whole musical piece to classify, we compare their accuracy with our piece accuracy. Mozart in this set of composers has the least accuracy (47\%). We believe this is because his work covered a large variety of things which makes it difficult for our model to be identified.
+
+\begin{table}[t!]
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline \bf Method & \bf Accuracy (\%) \\ \hline
+\underline{LSTM} & 87.3 \\
+Support vector machines & 86 \\
+Logistic regression & 83\\
+C4.5 decision tree & 79\\
+RIPPER rule set & 77\\
+\hline
+\end{tabular}
+\end{center}
+\caption{\label{resutls-table} Model Evaluation. }
+\end{table}
+
+\subsection{Generalized classifier}
+Unfortunately all the previous works only considered up to 3 composers in their classifier but we were able to generalize our approach and get good accuracy for more complex datasets. We were able to get the accuracy of 72\% on our test set using the same architecture as in the baseline experiment. Table 3 shows the accuracy for each composers. 
+\begin{table}[t!]
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline \bf Composers & \bf Accuracy \\ \hline
+Beethoven & 72 \\
+Mozart & 47\\
+Foster & 59\\
+Frescobaldi & 99\\
+Josquin & 65\\
+Schumann & 62\\
+Joplin & 93\\
+Gershwin & 95\\
+Giovannelli & 96\\
+Vivaldi & 95  \\
+\hline
+\end{tabular}
+\end{center}
+\caption{\label{test-accuracy-table}Accuracy. }
+\end{table}
+
+
+
+
+
 
 \subsection{Format of Electronic Manuscript}
 \label{sect:pdf}
