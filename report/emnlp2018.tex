@@ -16,8 +16,9 @@
 \usepackage[hyperref]{emnlp2018}
 \usepackage{times}
 \usepackage{latexsym}
-
+\usepackage{graphicx}
 \usepackage{url}
+\graphicspath{ {images/} }
 
 %\aclfinalcopy % Uncomment this line for the final submission
 
@@ -31,7 +32,7 @@
 \newcommand\confname{EMNLP 2018}
 \newcommand\conforg{SIGDAT}
 
-\title{Bachprop: using neural networks to solve composer classification}
+\title{Bachprop: Using Neural Networks to Solve Composer Classification}
 
 \author{First Author \\
   Affiliation / Address line 1 \\
@@ -132,7 +133,7 @@ Unfortunately all the previous works only considered up to 3 composers in their 
 \begin{table}[t!]
 \begin{center}
 \begin{tabular}{|l|l|}
-\hline \bf Composers & \bf Accuracy \\ \hline
+\hline \bf Composers & \bf Accuracy (\%)\\ \hline
 Beethoven & 72 \\
 Mozart & 47\\
 Foster & 59\\
@@ -149,9 +150,17 @@ Vivaldi & 95  \\
 \caption{\label{test-accuracy-table}Accuracy. }
 \end{table}
 
+\begin{figure}[h]
+\caption{Piece Accuracy}
+\centering
+\includegraphics[width=0.5\textwidth]{Gaccuracy.png}
+\end{figure}
 
-
-
+\begin{figure}[h]
+\caption{Validation Accuracy}
+\centering
+\includegraphics[width=0.5\textwidth]{vaccuracy.png}
+\end{figure}
 
 
 \subsection{Format of Electronic Manuscript}
