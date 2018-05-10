@@ -50,7 +50,7 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-Music is the ultimate language and shares many common features with the natural language . Both are methods of communication, and have been analyzed in depth and broken down into component parts (grammar for natural languages, rhythms/melodies/harmonies for music). In this paper, we present a state of the art model to classify musical pieces based on their authors. Our model achieves 88\% accuracy on a dataset of 3 composers, Bach, Beethoven, and Haydn, a 2\% improvement over existing work. Finally we show that our model generalizes to larger set of composers and gain 72\% accuracy on a dataset of 10 composers.
+Music shares many common features with natural language. Both are methods of communication, and have been analyzed in depth and broken down into component parts (grammar for natural languages, rhythms/melodies/harmonies for music). In this paper, we present a state of the art model to classify musical pieces based on their authors. Our model achieves 87.3\% accuracy on a dataset of 3 composers, Bach, Beethoven, and Haydn, a 1.3\% improvement over existing work. Finally we show that our model generalizes to larger set of composers and gain 72\% accuracy on a dataset of 10 composers.
 \end{abstract}
 
 \section{Introduction}
@@ -89,11 +89,14 @@ In this paper, we present a brand new approach to tackle the composer identifier
 \section{Approach}
 To solve this problem, we are taking a neural network based approach to multiclass classification. We divide the dataset into training, validation, and test datasets, with an $80:10:10$ split. The first step is to preprocess the MIDI file into a sequence of feature vectors. We subdivide the MIDI file into 32nd note divisions in time, and for each division we compute a set of features. The most important feature is what notes are being played at that division of time; this corresponds to the time between the \texttt{note\_on}  and \texttt{note\_off}  messages in the file. At this stage, we also transpose the notes into the key of C or C minor based on the currently active key signature. This helps normalize the data and remove any noise caused by key selection. We then convert the set of notes being played into a one-hot vector. We also extract the tempo, time signature, and key signature from each division of time and concatenate those features to the note feature (tempo being treated as continuous, while time and key are treated as categorical one-hot vectors). We then take each continuous  segment of 64 divisions (2 measures of music in 4/4 time) as one training example.
 
+\includegraphics[width=0.5\textwidth]{Architecture.png}
+
 The input sequence is then passed into an LSTM layer. We found that using a 150 length hidden state vector achieved the best results over our validation dataset. The final output of the LSTM layer is then passed into a fully connected linear layer, and finally into a softmax layer to compute the probabilities for each composer. We then pick the composer with the highest probability as the final result for the phrase. To increase accuracy over the whole musical piece, we take a majority vote over all the pharses in the piece. For the rest of this paper, we refer to ``phrase accuracy'' as accuracy for 1 phrase, while ``piece accuracy'' is the accuracy for each piece after taking this majority. 
 
-To train the network, we are using mini-batches of size 500 and the Adam optimizer with a decaying learning rate. Since our dataset is highly imbalanced (we have several times more examples from Beethoven/Bach than lesser known composers), we oversample the composers with fewer unique examples to compensate. The optimizer is set to minimize the cross entropy over the training dataset. The loss corresponds to the cross entropy error of our prediction compared to the actual composer of the musical piece. Our deep learning implementation was done in TensorFlow.
+To train the network, we use mini-batches of size 500 and the Adam optimizer with a decaying learning rate. Since our dataset is highly imbalanced (we have several times more examples from Beethoven/Bach than lesser known composers), we oversample the composers with fewer unique examples to compensate. The optimizer is set to minimize the cross entropy error over the training dataset. Our deep learning implementation was done in TensorFlow.
 
-\section{Experiments}
+
+\section{Experiments and Results}
 
 \subsection{Data}
 In this paper we use the KernScores database which contains musical pieces as a MIDI files. The KernScores database is a large collection of virtual musical scores made available by the Center for Computer Assisted Research in the humanities at Stanford University (CCARH). The KernScores database has a total of $7866496$ notes and is available online at \texttt{kern.ccarh.org} 
@@ -116,7 +119,7 @@ Josquin & 79\\
 Schumann & 82\\
 Joplin & 1788\\
 Gershwin & 890\\
-Giovannelli & 9758\\
+Giovannelli & 139\\
 Mozart & 6733  \\
 \hline
 \end{tabular}
@@ -130,7 +133,7 @@ Mozart & 6733  \\
 
 
 \subsection{Results}
-Most previous work identifies a composer from an entire piece, so to properly evaluate our model we should compare our piece accuracy against the other models. Our results show that our model achieves an accuracy of 88\% on Beethoven, Bach, and Haydn, and 2\% improvement over the previous work. % Young: Add some comments about individual composers maybe? Or other comments
+Most previous work identifies a composer from an entire piece, so to properly evaluate our model we should compare our piece accuracy against the other models. Our results show that our model achieves an accuracy of 87.3\% on Beethoven, Bach, and Haydn, and 1.3\% improvement over the previous work. % Young: Add some comments about individual composers maybe? Or other comments
 
 In addition to the 3 composer case, we also ran some experiments to see if our classifier generalizes to more composers from a wider range of styles. Using the 10 selected composers above, we were able to achieve an accuracy of 72\% using the same model. Table 3 presents the accuracy for each composer. Interestingly, the lowest accuracy over all composers is Mozart. We believe this is because his musical style was highly variable and the body of work is vast, which makes it difficult for our model to nail down his style quantitatively.
 
@@ -186,7 +189,7 @@ Vivaldi & 95  \\
 \end{figure}
 
 
-\subsection{Conclusion and Future Work}
+\section{Conclusion and Future Work}
 % Young: TODO
 
 
