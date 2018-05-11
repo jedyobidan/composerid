@@ -91,7 +91,9 @@ To solve this problem, we are taking a neural network based approach to multicla
 
 One issue that arises at this point is key normalization. The various pieces from each composer is written in a particular key, which represents the base note of the piece. Many chords, melodies, and harmonic structures are defined in terms of the key; for example, the 1/3/5 chord in C is a C/E/G, while in F it is F/A/C. Because MIDI provides key signature information, we are able to normalize each piece into the key of C by shifting all the notes in the piece either up or down. We believe this will increase performance as the intervals between the notes is of greater importance than their absolute pitch.
 
-We then convert the set of notes being played into a one-hot vector. We also extract the tempo, time signature, and key signature from each division of time and concatenate those features to the note feature (tempo being treated as continuous, while time and key are treated as categorical one-hot vectors). We then take each continuous  segment of 64 divisions (2 measures of music in 4/4 time) as one training example.
+MIDI also provides several orthogonal features that we chose to extract; specifically, key signature, time signature, and tempo. Key signature was discussed as above, and represents the ``base note'' of the piece. A piece's time signature represents the length and organization of each measure of music, which is similar to a phrase in natural language. For example, the most common time signature is 4/4, which means each measure consists of 4 beats, and each beat is 1 quarter note long. Finally, the tempo of the piece, measured in bpm, is how fast the piece is meant to be played. Key, time, and tempo can change in the middle of the piece, so we extract these features at each time slice as well.
+
+We then convert the notes, time signature, and key signature into categorical one-hot vectors, and treat the tempo as a continuous feature. We then concatenate our features into one feature vector for each time slice, and take a continuous segment of 64 divisions (2 measures of music in 4/4 time) as one training example.
 
 \includegraphics[width=0.5\textwidth]{Architecture.png}
 
@@ -139,9 +141,7 @@ We ran each of the experiments on ``machine info''.
 
 One other purpose for running these experiments is to find good values for the hyperparameters. The primary parameters we worked with were the number of measures in each sequence, the size of the mini-batches, the learning rate of the optimizer, and the hidden state size. We found that 2 measures of 4/4 time music and 150 hidden units seemed to maximize our validation accuracy while avoiding overfitting. Using size 500 mini-batches and a decaying learning rate imrpoved our training time. Specifically, the learning rate is initialized to 0.01, and decays by an order of magnitude every 150 iterations. We found that around 450 iterations was enough for validation loss to converge.
 
-\end{center}
-\caption{\label{arch-specification-table}Architecture Specification. }
-\end{table}
+
 \subsection{Results}
 Most previous work identifies a composer from an entire piece, so to properly evaluate our model we should compare our piece accuracy against the other models. Our results show that our model achieves an accuracy of 87.3\% on Beethoven, Bach, and Haydn, and 1.3\% improvement over the previous work. % Young: Add some comments about individual composers maybe? Or other comments
 
