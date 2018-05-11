@@ -133,18 +133,12 @@ Mozart & 6733  \\
 
 
 \subsection{Experiments}
-% Young: TODO
-We ran this model on a "add the machine info" . The other information regarding our architecture are listed in table 2.
+For this paper, we primarily ran two different experiments; one in which we train on data from Beethoven, Haydn, and Bach, creating a 3 composer classifier. This allows us to get a good comparison with the previous work. The other experiment we explored was creating a 10 composer classifier using more composers; this allows us to see how well the system generalizes. In addition, the 10 composer case contains composers with a wider range of styles, rather than simply classical music. In particular, Joplin is a ragtime composer, and Foster is a modern composer.
 
-\begin{table}[t!]
-\begin{center}
-\begin{tabular}{|l|l|}
-\hline \bf Specification & \bf Value\\ \hline
-Batch size & 500 \\
-Learning rate & 0.01\\
-Hidden state & 150\\
-\hline
-\end{tabular}
+We ran each of the experiments on ``machine info''.
+
+One other purpose for running these experiments is to find good values for the hyperparameters. The primary parameters we worked with were the number of measures in each sequence, the size of the mini-batches, the learning rate of the optimizer, and the hidden state size. We found that 2 measures of 4/4 time music and 150 hidden units seemed to maximize our validation accuracy while avoiding overfitting. Using size 500 mini-batches and a decaying learning rate imrpoved our training time. Specifically, the learning rate is initialized to 0.01, and decays by an order of magnitude every 150 iterations. We found that around 450 iterations was enough for validation loss to converge.
+
 \end{center}
 \caption{\label{arch-specification-table}Architecture Specification. }
 \end{table}
