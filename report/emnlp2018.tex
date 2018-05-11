@@ -87,7 +87,11 @@ In this paper, we present a brand new approach to tackle the composer identifier
 
 
 \section{Approach}
-To solve this problem, we are taking a neural network based approach to multiclass classification. We divide the dataset into training, validation, and test datasets, with an $80:10:10$ split. The first step is to preprocess the MIDI file into a sequence of feature vectors. We subdivide the MIDI file into 32nd note divisions in time, and for each division we compute a set of features. The most important feature is what notes are being played at that division of time; this corresponds to the time between the \texttt{note\_on}  and \texttt{note\_off}  messages in the file. At this stage, we also transpose the notes into the key of C or C minor based on the currently active key signature. This helps normalize the data and remove any noise caused by key selection. We then convert the set of notes being played into a one-hot vector. We also extract the tempo, time signature, and key signature from each division of time and concatenate those features to the note feature (tempo being treated as continuous, while time and key are treated as categorical one-hot vectors). We then take each continuous  segment of 64 divisions (2 measures of music in 4/4 time) as one training example.
+To solve this problem, we are taking a neural network based approach to multiclass classification. We divide the dataset into training, validation, and test datasets, with an $80:10:10$ split. The first step is to preprocess the MIDI file into a sequence of feature vectors. We subdivide the MIDI file into 32nd note divisions in time, and for each division we compute a set of features. The most important feature is what notes are being played at that division of time; this corresponds to the time between the \texttt{note\_on}  and \texttt{note\_off}  messages in the file. 
+
+One issue that arises at this point is key normalization. The various pieces from each composer is written in a particular key, which represents the base note of the piece. Many chords, melodies, and harmonic structures are defined in terms of the key; for example, the 1/3/5 chord in C is a C/E/G, while in F it is F/A/C. Because MIDI provides key signature information, we are able to normalize each piece into the key of C by shifting all the notes in the piece either up or down. We believe this will increase performance as the intervals between the notes is of greater importance than their absolute pitch.
+
+We then convert the set of notes being played into a one-hot vector. We also extract the tempo, time signature, and key signature from each division of time and concatenate those features to the note feature (tempo being treated as continuous, while time and key are treated as categorical one-hot vectors). We then take each continuous  segment of 64 divisions (2 measures of music in 4/4 time) as one training example.
 
 \includegraphics[width=0.5\textwidth]{Architecture.png}
 
@@ -135,7 +139,7 @@ We ran this model on a "add the machine info" . The other information regarding 
 \begin{table}[t!]
 \begin{center}
 \begin{tabular}{|l|l|}
-\hline \bf Specification & \bf Value (\%)\\ \hline
+\hline \bf Specification & \bf Value\\ \hline
 Batch size & 500 \\
 Learning rate & 0.01\\
 Hidden state & 150\\
@@ -204,7 +208,8 @@ Vivaldi & 95  \\
 \section{Conclusion and Future Work}
 % Young: TODO
 
-The development of musical grammar shows that there is a hierarchical structures in a musical component. Over the years, researchers around the world tried to classify musical pieces based on these hierarchical structures. With the advances in computers and technologies, researchers started classifying pieces using computers. In this paper, we tackled the question "Can computers accurately identify the composer of a musical piece?". The result is an LSTM model that is capable of identifying the composer of each musical piece. We were able to build a model that surpass the previous state of the art approach by 1.3\%. Our approach is generalized to work on a larger list of composers compared to previous approaches. \\ 
+The development of musical grammar shows that there is a hierarchical structures in a musical component. Over the years, researchers around the world tried to classify musical pieces based on these hierarchical structures. With the advances in computers and technologies, researchers started classifying pieces using computers. In this paper, we tackled the question "Can computers accurately identify the composer of a musical piece?". The result is an LSTM model that is capable of identifying the composer of each musical piece. We were able to build a model that surpass the previous state of the art approach by 1.3\%. Our approach is generalized to work on a larger list of composers compared to previous approaches. 
+
 As for future work, we would like to have an explicit feature extraction. We believe having the right features has a high impact on the accuracy of our model. We would also like to study each composers in depth and have a collaboration with a few music theorist to build a better model. Also, currentely we have a multi-class classifier. We would like to expand our work and build a binary classifier as well were we can tell if a musical piece is a work of specific composer. 
 
 
