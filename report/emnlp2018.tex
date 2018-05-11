@@ -34,12 +34,12 @@
 
 \title{Bachprop: Using Neural Networks to Solve Composer Classification}
 
-\author{First Author \\
+\author{Young Wang \\
   Affiliation / Address line 1 \\
   Affiliation / Address line 2 \\
   Affiliation / Address line 3 \\
   {\tt email@domain} \\\And
-  Second Author \\
+  Sepideh Maleki \\
   Affiliation / Address line 1 \\
   Affiliation / Address line 2 \\
   Affiliation / Address line 3 \\
@@ -55,11 +55,11 @@ Music shares many common features with natural language. Both are methods of com
 
 \section{Introduction}
 
-It has been more than four decades since Leonard Bernstein called on researchers at his famous lecture at Harvard University \cite{Bernstein} to create a musical grammar similar to Noam Chomsky's generative grammar \cite{Chomsky}. 
+It has been more than four decades since Leonard Bernstein called on researchers at his famous lecture at Harvard University \cite{Bernstein} to create a musical grammar similar to Noam Chomsky's generative grammar \cite{Chomsky}. Inspired by Bernstein's speech, American linguist Ray Jackendoff and music theorist Fred Lerdahl presented A generative theory of tonal music (GTTM) with the goal of illustrating human's understanding of music.
+This theory has been influential and inspired further work by other researchers in the field of music cognition which then lead to the creation of musical grammar. These studies show that there is a strict hierarachical structure in a musical components. One way to test these musical grammar is to classify musical pieces using such models. In this paper, we tried to answer a more generalized question and develope a model that could identify the \texttt{composer} of a musical piece using these hierarchical structures in a musical component.
 
 % Young: Small amount of fluff to transition between these two sentences.
 
-In this paper, we developed a model that could identify the composer of a musical piece using these hierarchical structures in a musical component.
 
 % Inspired by Bernstein's speech, American linguist Ray Jackendoff and music theorist Fred Lerdahl presented A generative theory of tonal music (GTTM) with the goal of illustrating human's understanding of music. This theory has been influential and inspired further work by other researchers in the field of music cognition which then lead to the creation of musical grammar and inspired other researchers to develop different models for musical grammars. Such models shows that there is a strict hierarchical structure in a musical components. With the advances in technology and computers a new problem has been created and that is to see if computers can also find these strict hierarchical structure in a musical components. 
 % Young: Think this is unnecessary fluff
@@ -73,9 +73,9 @@ In this paper, we propose a new way to building a composer-classification model 
 
 \section{Related Works}
 
-With the advances of new techniques in machine learning and deep learning, recognizing a musical piece composer has become the center of attention in the field of music information retrieval (MIR).
+The earliest work on the field of music information retrieval (MIR) goes back to 1960s \cite {Kassler} and it became more popular after developement of models musical grammars. MIR has been used in various research topics including finding the similarities between two musical pieces \cite{Berenzweig}, finding a song based on a tune \cite {Ghias} and specifically for composer classification which is the topic of our research.
 
-Buzzanca \cite{Buzz} used a supervised learning approach for musical style recognition of Giovanni Pierluigi da Palestrina. He implemented a neural network that could recognize Pierluigi's style 97\% accuracy.
+One of the earliest studies on classifying musical pieces using machine learning was done by Buzzanca \cite{Buzz}. He used a supervised learning approach for musical style recognition of Giovanni Pierluigi da Palestrina. He implemented a neural network that could recognize Pierluigi's style with 97\% accuracy. However, his method is not considered fully automated since all the pieces of the music he used are largely preprocessed and classification is only done on selected short \texttt {main themes}.
 
 There have been a few studies on style recognition using an n-gram model. Wolkowicz, Kulka, and Keselj \cite{n-gram} used an n-gram model to classify piano files of five composers.  Hillewaere, Manderick, and Conklin \cite{Hillewaere} also used n-gram models to classify musical pieces of two composers (Haydn and Mozart). They achieved an accuracy of 61\%.
 
@@ -99,7 +99,7 @@ To train the network, we use mini-batches of size 500 and the Adam optimizer wit
 \section{Experiments and Results}
 
 \subsection{Data}
-In this paper we use the KernScores database which contains musical pieces as a MIDI files. The KernScores database is a large collection of virtual musical scores made available by the Center for Computer Assisted Research in the humanities at Stanford University (CCARH). The KernScores database has a total of $7866496$ notes and is available online at \texttt{kern.ccarh.org} 
+In this paper we use the KernScores database which contains musical pieces as a MIDI files. The KernScores database is a large collection of virtual musical scores made available by the Center for Computer Assisted Research in the humanities at Stanford University (CCARH). The KernScores database has a total of $7,866,496$ notes and is available online at \texttt{kern.ccarh.org} 
 
 As a baseline, we aim to compare our results with the 86\% accuracy result from Herremans, Sorensen, and Martens \cite {Herremans}. They also used the KernScores dataset and achieved fairly good accuracy. Their work attempts to solve multiclass classification between Bach, Beethoven, and Haydn, so we also chose these composers in our experimental results. An overview of the selected composers was given in table 1.
 
@@ -130,8 +130,20 @@ Mozart & 6733  \\
 
 \subsection{Experiments}
 % Young: TODO
+We ran this model on a "add the machine info" . The other information regarding our architecture are listed in table 2.
 
-
+\begin{table}[t!]
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline \bf Specification & \bf Value (\%)\\ \hline
+Batch size & 500 \\
+Learning rate & 0.01\\
+Hidden state & 150\\
+\hline
+\end{tabular}
+\end{center}
+\caption{\label{arch-specification-table}Architecture Specification. }
+\end{table}
 \subsection{Results}
 Most previous work identifies a composer from an entire piece, so to properly evaluate our model we should compare our piece accuracy against the other models. Our results show that our model achieves an accuracy of 87.3\% on Beethoven, Bach, and Haydn, and 1.3\% improvement over the previous work. % Young: Add some comments about individual composers maybe? Or other comments
 
@@ -192,8 +204,22 @@ Vivaldi & 95  \\
 \section{Conclusion and Future Work}
 % Young: TODO
 
+The development of musical grammar shows that there is a hierarchical structures in a musical component. Over the years, researchers around the world tried to classify musical pieces based on these hierarchical structures. With the advances in computers and technologies, researchers started classifying pieces using computers. In this paper, we tackled the question "Can computers accurately identify the composer of a musical piece?". The result is an LSTM model that is capable of identifying the composer of each musical piece. We were able to build a model that surpass the previous state of the art approach by 1.3\%. Our approach is generalized to work on a larger list of composers compared to previous approaches. \\ 
+As for future work, we would like to have an explicit feature extraction. We believe having the right features has a high impact on the accuracy of our model. We would also like to study each composers in depth and have a collaboration with a few music theorist to build a better model. Also, currentely we have a multi-class classifier. We would like to expand our work and build a binary classifier as well were we can tell if a musical piece is a work of specific composer. 
 
-\bibliographystyle{acl_natlib_nourl}
+
+
 \bibliography{emnlp2018}
+\bibliographystyle{acl_natbib_nourl}
+
+\appendix
+
+
+
+Appendices ({\em i.e.} supplementary material in the form of proofs, tables,
+or pseudo-code) should be {\bf uploaded as supplementary material} when submitting the paper for review.
+Upon acceptance, the appendices come after the references, as shown here. Use
+\verb|\appendix| before any appendix section to switch the section
+numbering over to letters.
 
 \end{document}
