@@ -139,20 +139,6 @@ One other purpose for running these experiments is to find good values for the h
 
 \subsection{Results}
 Most previous work identifies a composer from an entire piece, so to properly evaluate our model we should compare our piece accuracy against the other models. Our results show that our model achieves an accuracy of 87.3\% on Beethoven, Bach, and Haydn, and 1.3\% improvement over the previous work. % Young: Add some comments about individual composers maybe? Or other comments
-Figure 1 and 2 shows the phrase and piece accuracy of our model for 3 classical composers.
-
-\begin{figure}[h]
-\caption{Phrase Accuracy Training Curve for 3 composers}
-\centering
-\includegraphics[width=0.5\textwidth]{3_com_phrase.png}
-\end{figure}
-
-\begin{figure}[h]
-\caption{Piece Accuracy Training Curve for 3 composers}
-\centering
-\includegraphics[width=0.5\textwidth]{3_com_piece.png}
-\end{figure}
-
 
 In addition to the 3 composer case, we also ran some experiments to see if our classifier generalizes to more composers from a wider range of styles. Using the 10 selected composers above, we were able to achieve an accuracy of 72\% using the same model. Table 3 presents the accuracy for each composer. Interestingly, the lowest accuracy over all composers is Mozart. We believe this is because his musical style was highly variable and the body of work is vast, which makes it difficult for our model to nail down his style quantitatively. \\
 Figure 3 shows the training accuracy of our model. he high training accuracy shows that the training part of our system works well. Figure 4 and 5 summarizes piece accuracy and phrase accuracy respectively for 10 composers list.
@@ -177,11 +163,7 @@ RIPPER rule set & 77\\
 \begin{table}[t!]
 \begin{center}
 \begin{tabular}{|l|l|}
-\hline \bf Composer & \bf\begin{figure}[h]
-\caption{Training Accuracy Curve}
-\centering
-\includegraphics[width=0.5\textwidth]{training_acc.png}
-\end{figure} Piece Accuracy (\%) \\ \hline
+\hline \bf Composer & \bf Piece Accuracy (\%) \\ \hline
 
 Beethoven & 82 \\
 Bach & 80\\

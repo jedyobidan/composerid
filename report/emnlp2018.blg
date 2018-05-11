@@ -1,0 +1,48 @@
+This is BibTeX, Version 0.99d (TeX Live 2015/Debian)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: emnlp2018.aux
+The style file: acl_natbib_nourl.bst
+Database file #1: emnlp2018.bib
+Warning--I didn't find a database entry for "Kern"
+You've used 9 entries,
+            2840 wiz_defined-function locations,
+            641 strings with 5988 characters,
+and the built_in function-call counts, 5413 in all, are:
+= -- 450
+> -- 248
+< -- 6
++ -- 87
+- -- 72
+* -- 381
+:= -- 841
+add.period$ -- 36
+call.type$ -- 9
+change.case$ -- 75
+chr.to.int$ -- 9
+cite$ -- 9
+duplicate$ -- 417
+empty$ -- 369
+format.name$ -- 97
+if$ -- 1079
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 80
+newline$ -- 47
+num.names$ -- 36
+pop$ -- 161
+preamble$ -- 1
+purify$ -- 60
+quote$ -- 0
+skip$ -- 150
+stack$ -- 0
+substring$ -- 242
+swap$ -- 206
+text.length$ -- 3
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 81
+warning$ -- 0
+while$ -- 40
+width$ -- 0
+write$ -- 119
+(There was 1 warning)

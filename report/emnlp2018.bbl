@@ -1,0 +1,54 @@
+\begin{thebibliography}{9}
+\expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
+
+\bibitem[{Berenzweig et~al.(2004)Berenzweig, Logan, Ellis, and
+  Whitman}]{Berenzweig}
+Adam Berenzweig, Beth Logan, Daniel P.~W. Ellis, and Brian P.~W. Whitman. 2004.
+\newblock A large-scale evaluation of acoustic and subjective music-similarity
+  measures.
+\newblock \emph{Comput. Music J.}, 28(2):63--76.
+
+\bibitem[{Buzzanca(2002)}]{Buzz}
+Giuseppe Buzzanca. 2002.
+\newblock A supervised learning approach to musical style recognition.
+
+\bibitem[{Dor and Reich(2011)}]{Dor}
+O.~Dor and Y.~Reich. 2011.
+\newblock An evaluation of musical score characteristics for automatic
+  classification of composers.
+\newblock \emph{Computer Music Journal}, 35(3):86--97.
+
+\bibitem[{Ghias et~al.(1995)Ghias, Logan, Chamberlin, and Smith}]{Ghias}
+Asif Ghias, Jonathan Logan, David Chamberlin, and Brian~C. Smith. 1995.
+\newblock Query by humming: Musical information retrieval in an audio database.
+\newblock In \emph{Proceedings of the Third ACM International Conference on
+  Multimedia}, MULTIMEDIA '95, pages 231--236, New York, NY, USA. ACM.
+
+\bibitem[{Herremans et~al.(2015)Herremans, Sörensen, and Martens}]{Herremans}
+D.~Herremans, K.~Sörensen, and D.~Martens. 2015.
+\newblock Classification and generation of composer-specific music using global
+  feature models and variable neighborhood search.
+\newblock \emph{Computer Music Journal}, 39(3):71--91.
+
+\bibitem[{Hillewaere et~al.(2010)Hillewaere, M, and Conklin}]{Hillewaere}
+Ruben Hillewaere, Bernard M, and Darrell Conklin. 2010.
+\newblock String quartet classification with monophonic models.
+\newblock In \emph{In ISMIR}, pages 537--542.
+
+\bibitem[{Kassler(1966)}]{Kassler}
+Michael Kassler. 1966.
+\newblock Toward musical information retrieval.
+\newblock \emph{Perspectives of New Music}.
+
+\bibitem[{Mearns et~al.(2010)Mearns, Tidhar, and Dixon}]{Mearns}
+Lesley Mearns, Dan Tidhar, and Simon Dixon. 2010.
+\newblock Characterisation of composer style using high-level musical features.
+\newblock In \emph{Proceedings of 3rd International Workshop on Machine
+  Learning and Music}, MML '10, pages 37--40, New York, NY, USA. ACM.
+
+\bibitem[{Wołkowicz et~al.(2007)Wołkowicz, Kulka, and Kešelj}]{n-gram}
+Jacek Wołkowicz, Zbigniew Kulka, and Vlado Kešelj. 2007.
+\newblock Archives of acoustics 33, 1, 43–55 (2008) n-gram-based approach to
+  composer recognition.
+
+\end{thebibliography}
