@@ -57,26 +57,26 @@ Music shares many common features with natural language. Both are methods of com
 
 % Young: references (I have no idea how to do them)
 
-In 1983, American linguist Ray Jackendoff and music theorist Fred Lerdahl presented ``A generative theory of tonal music'', a formal description of music comparable to Chomsky's generative grammar. This theory influenced and inspired further work by other researchers in the field of music cognition to pursue the creation of a musical grammar. These studies show that there is a strict hierarachical structure in a musical components; that music too follows a vague set of rules just like other natural languages. Supposing that this idea is true, we should be able to use NLP techniques to model musical style, classify musical works, and perhaps even generate music.
+In 1983, American linguist Ray Jackendoff and music theorist Fred Lerdahl presented ``A generative theory of tonal music'', a formal description of music comparable to Chomsky's generative grammar. This theory influenced and inspired further work by other researchers in the field of music cognition to pursue the creation of a musical grammar. These studies show that there is a strict hierarchical  structure in a musical components; that music too follows a vague set of rules just like other natural languages. Supposing that this idea is true, we should be able to use NLP techniques to model musical style, classify musical works, and perhaps even generate music.
 
 There has been a number of studies on rule based approaches for this problem. Previous works mostly includes producing a generative grammar to capture stylistics features of a musical pieces. However, these studies show that musical style happens in ways musicology and cognitive approaches are still unable to perfectly define. In this paper, we explored using  data-driven techniques to analyze these passages. We propose to transform the composer identification problem into a sequence classification problem and train an LSTM to solve it.  We believe our approach will be more general and produce better results that rule-based approaches.
 
-One of the challenges of this work is to find a good representation for musical features, a prerequisite for building an accurate classification model. There are number of ways to represent these musical structures and features.  In this work, we decided to work with the MIDI files from the KernScores database \cite{Kern}. MIDI provides a symbolic representation of music and low and mid level features are easily extracted from it; specifically, we pulled the pitch, duration, tempo, key signature and time signature information from each piece. We believe this format is better than attempting to extract features from audio recordings, as it eliminates the effects of noise due to the musical performance.
+One of the challenges of this work is to find a good representation for musical features, a prerequisite for building an accurate classification model. There are number of ways to represent these musical structures and features.  In this work, we decided to work with the MIDI files from the KernScores database \texttt{kern.ccarh.org}. MIDI provides a symbolic representation of music and low and mid-level features are easily extracted from it; specifically, we pulled the pitch, duration, tempo, key signature and time signature information from each piece. We believe this format is better than attempting to extract features from audio recordings, as it eliminates the effects of noise due to the musical performance.
 
 In this paper, we propose a new way to building a composer-classification model that can accurately identify the composer of a musical piece. Specifically, we would like to solve the multiclass version of this problem using a sequence classification approach and recursive neural networks. The rest of the paper is organized as follows. Section 2 reviews related work. Section 3 explains our approach for building the composer-classificatiemailon model. Section 4 presents and discusses our experiments and their results. Section 5 contains any concluding remarks and future work.
 
 
 \section{Related Work}
 
-The earliest work on the field of music information retrieval (MIR) goes back to 1960s \cite {Kassler} and it became more popular after developement of models musical grammars. MIR has been used in various research topics including finding the similarities between two musical pieces \cite{Berenzweig}, finding a song based on a tune \cite {Ghias} and specifically for composer classification which is the topic of our research.
+The earliest work on the field of music information retrieval (MIR) goes back to 1960s \cite {Kassler} and it became more popular after development of models musical grammars. MIR has been used in various research topics including finding the similarities between two musical pieces \cite{Berenzweig}, finding a song based on a tune \cite {Ghias} and specifically for composer classification which is the topic of our research.
 
-One of the earliest studies on classifying musical pieces using machine learning was done by Buzzanca \cite{Buzz}. He used a supervised learning approach for musical style recognition of Giovanni Pierluigi da Palestrina. He implemented a neural network that could recognize Pierluigi's style with 97\% accuracy. However, his method is not considered fully automated since all the pieces of the music he used are largely preprocessed and classification is only done on selected short \texttt {main themes}.
+One of the earliest studies on classifying musical pieces using machine learning was done by Buzzanca \cite{Buzz}. He used a supervised learning approach for musical style recognition of Giovanni Pierluigi da Palestrina. He implemented a neural network that could recognize Pierluigi's style with 97\% accuracy. However, his method is not considered fully automated since all the pieces of the music he used are largely preprocessed and classification is only done on selected short main themes.
 
 There have been a few studies on style recognition using an n-gram model. Wolkowicz, Kulka, and Keselj \cite{n-gram} used an n-gram model to classify piano files of five composers.  Hillewaere, Manderick, and Conklin \cite{Hillewaere} also used n-gram models to classify musical pieces of two composers (Haydn and Mozart). They achieved an accuracy of 61\%.
 
 Mearns, Tidhar, and Dixon \cite{Mearns} used a decision tree and naive Bayes models to classify similar musical pieces. The correctly classified 44 out of 66 pieces with seven composer classes. Dor and Reich \cite{Dor} achieved an accuracy of 75\% in classifying keyboard scores between Mozart and Haydn by using decision trees, naive Bayes, and support vector machines.
 
-Herremans, Sorensen, and Martens \cite {Herremans} built four composer-classification models to understand the stylistic differemces between Beethoven, Bach, and Haydn. The first two models use an if-then rule set and a decision tree and the second two they use a logistic regression model and a semailupport vector machine classifier which produce more accurate results. They achieved an accuracy of 86\% for the best model. 
+Herremans, Sorensen, and Martens \cite {Herremans} built four composer-classification models to understand the stylistic differences between Beethoven, Bach, and Haydn. The first two models use an if-then rule set and a decision tree and the second two they use a logistic regression model and a support vector machine classifier which produce more accurate results. They achieved an accuracy of 86\% for the best model. 
 
 In this paper, we present a brand new approach to tackle the composer identifier problem. We use a Long Short Term Memory (LSTM) architecture to produce a composer-classification model to recognize the composer from a musical piece. Our model is a multi-class classifier that can be used to identify the composer of a musical piece. 
 
@@ -92,7 +92,7 @@ We then convert the notes, time signature, and key signature into categorical on
 
 \includegraphics[width=0.5\textwidth]{Architecture.png}
 
-The input sequence is then passed into an LSTM layer. We found that using a 150 length hidden state vector achieved the best results over our validation dataset. The final output of the LSTM layer is then passed into a fully connected linear layer, and finally into a softmax layer to compute the probabilities for each composer. We then pick the composer with the highest probability as the final result for the phrase. To increase accuracy over the whole musical piece, we take a majority vote over all the pharses in the piece. For the rest of this paper, we refer to ``phrase accuracy'' as accuracy for 1 phrase, while ``piece accuracy'' is the accuracy for each piece after taking this majority. 
+The input sequence is then passed into an LSTM layer. We found that using a 150 length hidden state vector achieved the best results over our validation dataset. The final output of the LSTM layer is then passed into a fully connected linear layer, and finally into a softmax layer to compute the probabilities for each composer. We then pick the composer with the highest probability as the final result for the phrase. To increase accuracy over the whole musical piece, we take a majority vote over all the phrases in the piece. For the rest of this paper, we refer to ``phrase accuracy'' as accuracy for 1 phrase, while ``piece accuracy'' is the accuracy for each piece after taking this majority. 	
 
 To train the network, we use mini-batches of size 500 and the Adam optimizer with a decaying learning rate. Since our dataset is highly imbalanced (we have several times more examples from Beethoven/Bach than lesser known composers), we oversample the composers with fewer unique examples to compensate. The optimizer is set to minimize the cross entropy error over the training dataset. Our deep learning implementation was done in TensorFlow.
 
@@ -132,30 +132,31 @@ Mozart & 6733  \\
 \subsection{Experiments}
 For this paper, we primarily ran two different experiments; one in which we train on data from Beethoven, Haydn, and Bach, creating a 3 composer classifier. This allows us to get a good comparison with the previous work. The other experiment we explored was creating a 10 composer classifier using more composers; this allows us to see how well the system generalizes. In addition, the 10 composer case contains composers with a wider range of styles, rather than simply classical music. In particular, Joplin is a ragtime composer, and Foster is a modern composer.
 
-We ran each of the experiments on ``machine info''.
-
-One other purpose for running these experiments is to find good values for the hyperparameters. The primary parameters we worked with were the number of measures in each sequence, the size of the mini-batches, the learning rate of the optimizer, and the hidden state size. We found that 2 measures of 4/4 time music and 150 hidden units seemed to maximize our validation accuracy while avoiding overfitting. Using size 500 mini-batches and a decaying learning rate imrpoved our training time. Specifically, the learning rate is initialized to 0.01, and decays by an order of magnitude every 150 iterations. We found that around 450 iterations was enough for validation loss to converge.
+One other purpose for running these experiments is to find good values for the hyper parameters. The primary parameters we worked with were the number of measures in each sequence, the size of the mini-batches, the learning rate of the optimizer, and the hidden state size. We found that 2 measures of 4/4 time music and 150 hidden units seemed to maximize our validation accuracy while avoiding overfitting. Using size 500 mini-batches and a decaying learning rate improved our training time. Specifically, the learning rate is initialized to 0.01, and decays by an order of magnitude every 150 iterations. We found that around 450 iterations was enough for validation loss to converge.
 
 
 \subsection{Results}
-Most previous work identifies a composer from an entire piece, so to properly evaluate our model we should compare our piece accuracy against the other models. Our results show that our model achieves an accuracy of 87.3\% on Beethoven, Bach, and Haydn, and 1.3\% improvement over the previous work. % Young: Add some comments about individual composers maybe? Or other comments
-Figure 1 and 2 shows the phrase and piece accuracy of our model for 3 classical composers.
+Most previous work identifies a composer from an entire piece, so to properly evaluate our model we should compare our piece accuracy against the other models. Our results show that our model achieves an accuracy of 87.3\% on Beethoven, Bach, and Haydn, and 1.3\% improvement over the previous work. 
+Figure 1 and 2 shows the phrase and piece accuracy of our model for 3 classical composers. Since are using the whole piece for classification, for a fair comparison we look at phrase accuracy. 
 
 \begin{figure}[h]
 \caption{Phrase Accuracy Training Curve for 3 composers}
 \centering
-\includegraphics[width=0.5\textwidth]{3_com_phrase.png}
+\includegraphics[width=0.5\textwidth]{3_com_piece.png}
 \end{figure}
 
 \begin{figure}[h]
 \caption{Piece Accuracy Training Curve for 3 composers}
 \centering
-\includegraphics[width=0.5\textwidth]{3_com_piece.png}
+\includegraphics[width=0.5\textwidth]{3_com_phrase.png}
 \end{figure}
 
 
-In addition to the 3 composer case, we also ran some experiments to see if our classifier generalizes to more composers from a wider range of styles. Using the 10 selected composers above, we were able to achieve an accuracy of 72\% using the same model. Table 3 presents the accuracy for each composer. Interestingly, the lowest accuracy over all composers is Mozart. We believe this is because his musical style was highly variable and the body of work is vast, which makes it difficult for our model to nail down his style quantitatively. \\
-Figure 3 shows the training accuracy of our model. he high training accuracy shows that the training part of our system works well. Figure 4 and 5 summarizes piece accuracy and phrase accuracy respectively for 10 composers list.
+In addition to the 3 composer case, we also ran some experiments to see if our classifier generalizes to more composers from a wider range of styles. Using the 10 selected composers above, we were able to achieve an accuracy of 72\% using the same model. Table 3 presents the phrase accuracy for each composer. Interestingly, the lowest accuracy over all composers is Mozart. We believe this is because his musical style was highly variable and the body of work is vast, which makes it difficult for our model to nail down his style quantitatively.
+
+Figure 3 shows the training accuracy of our model. The high training accuracy shows that the training part of our system works well. Figure 4 and 5 summarizes piece accuracy and phrase accuracy respectively for 10 composer's dataset. 
+
+
 
 \begin{table}[t!]
 \begin{center}
@@ -176,16 +177,14 @@ RIPPER rule set & 77\\
 \begin{table}[t!]
 \begin{center}
 \begin{tabular}{|l|l|}
-\hline \bf Composer & \bf Piece Accuracy (\%) \\ \hline
-
+\hline \bf Composers & \bf Phrase Accuracy (\%) \\ \hline
 Beethoven & 82 \\
 Bach & 80\\
 Haydn & 66\\
-
 \hline
 \end{tabular}
 \end{center}
-\caption{\label{resutls-table} Piece accuracy for 3 composers. }
+\caption{\label{resutls-table} Phrase accuracy for 3 composer experiment. }
 \end{table}
 
 
@@ -194,7 +193,7 @@ Haydn & 66\\
 \begin{table}[t!]
 \begin{center}
 \begin{tabular}{|l|l|}
-\hline \bf Composers & \bf Accuracy (\%)\\ \hline
+\hline \bf Composers & \bf Phrase Accuracy (\%)\\ \hline
 Beethoven & 72 \\
 Mozart & 47\\
 Foster & 59\\
@@ -208,25 +207,17 @@ Vivaldi & 95  \\
 \hline
 \end{tabular}
 \end{center}
-\caption{\label{test-accuracy-table}Accuracy. }
+\caption{\label{test-accuracy-table}Phrase accuracy for 10 composer experiment. }
 \end{table}
 
-
 \begin{figure}[h]
-\caption{Training Accuracy Curve}
-\centering
-\includegraphics[width=0.5\textwidth]{training_acc.png}
-\end{figure}
-
-
-\begin{figure}[h]
-\caption{Piece Accuracy Training Curve}
+\caption{Piece Accuracy Training Curve for 10 composers}
 \centering
 \includegraphics[width=0.5\textwidth]{group_acc.png}
 \end{figure}
 
 \begin{figure}[h]
-\caption{Phrase Accuracy Training Curve}
+\caption{Phrase Accuracy Training Curve for 10 composers}
 \centering
 \includegraphics[width=0.53\textwidth]{phrase_acc.png}
 \end{figure}
@@ -243,5 +234,4 @@ One further avenue of research is in better feature engineering. We believe havi
 
 \bibliography{emnlp2018}
 \bibliographystyle{acl_natbib_nourl}
-
 \end{document}
